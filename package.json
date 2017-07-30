@@ -1,0 +1,19 @@
+{
+  "name": "skwell",
+  "version": "1.0.0",
+  "description": "SQL Server Client pooled and promised",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "generic-pool": "^3.1.7",
+    "tedious": "^2.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^4.3.0",
+	"eslint-config-leankit": "^4.0.0"
+  }
+}
