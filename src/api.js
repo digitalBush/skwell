@@ -1,5 +1,7 @@
 const Request = require( "tedious" ).Request;
+
 const types = require( "./types" );
+const fileLoader = require( "./fileLoader" );
 
 // TODO: support array params
 function addParams( request, params ) {
@@ -34,10 +36,11 @@ function transformRow( row ) {
 
 class Api {
 
-	execute( sql, params ) {
+	async execute( sql, params ) {
+		const _sql = await sql;
 		return this.withConnection( conn => {
 			return new Promise( ( resolve, reject ) => {
-				const request = new Request( sql, ( err, rowCount ) => {
+				const request = new Request( _sql, ( err, rowCount ) => {
 					if ( err ) {
 						return reject( err );
 					}
@@ -50,10 +53,11 @@ class Api {
 	}
 
 	async query( sql, params ) {
+		const _sql = await sql;
 		const results = await this.withConnection( conn => {
 			const data = [];
 			return new Promise( ( resolve, reject ) => {
-				const request = new Request( sql, err => {
+				const request = new Request( _sql, err => {
 					if ( err ) {
 						return reject( err );
 					}
@@ -90,5 +94,5 @@ class Api {
 }
 
 Object.assign( Api.prototype, types );
-
+Api.prototype.fromFile = fileLoader;
 module.exports = Api;
