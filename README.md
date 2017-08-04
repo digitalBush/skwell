@@ -69,7 +69,9 @@ const result = await sql.transaction( sql.read_uncommitted, tx = {
 // At this point, the transaction will be committed for you.
 // If something would have broken, the transaction would have been rolled back.
 ```
- That's about it. 👍
+That's about it. 👍
 
-
-
+## Running the tests (Dockerized SQL Server)
+1. `npm install`
+1. `npm run sql:start` to get a local instance of sql server
+1. `npm test`

@@ -2,9 +2,12 @@
   "name": "skwell",
   "version": "1.0.0",
   "description": "SQL Server Client pooled and promised",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
-    "test": "test"
+    "test": "NODE_ENV=test mocha -r spec/init -R spec 'spec/**/*.spec.js'",
+    "test:watch": "nodemon --exec \"NODE_ENV=test mocha -r spec/init -R spec 'spec/**/*.spec.js'\" -e js,json,sql",
+    "sql:start": "docker-compose -f spec/setup/docker-compose.yml up -d",
+    "sql:stop": "docker-compose -f spec/setup/docker-compose.yml down"
   },
   "author": "",
   "license": "ISC",
@@ -14,7 +17,15 @@
     "tedious": "^2.0.0"
   },
   "devDependencies": {
+    "app-module-path": "^2.2.0",
+    "chai": "^4.1.0",
+    "chai-as-promised": "^7.1.1",
+    "dirty-chai": "^2.0.1",
     "eslint": "^4.3.0",
-    "eslint-config-leankit": "^4.0.0"
+    "eslint-config-leankit": "^4.1.0",
+    "mocha": "^3.5.0",
+    "nodemon": "^1.11.0",
+    "sinon": "^3.0.0",
+    "sinon-chai": "^2.12.0"
   }
 }

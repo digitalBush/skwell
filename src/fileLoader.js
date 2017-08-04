@@ -17,7 +17,7 @@ module.exports = function( relativeFile ) {
 
 	let result = cache[ fileName ];
 	if ( !result ) {
-		result = cache[ fileName ] = readFileAsync( relativeFile, "utf8" );
+		result = cache[ fileName ] = readFileAsync( fileName, "utf8" );
 	}
 	return result;
 };
