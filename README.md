@@ -36,6 +36,9 @@ const insertedCount = await sql.execute(
 // query, returns an array of objects
 const users = await sql.query( query, params );
 
+// query, returns a stream
+const userStream = await sql.queryStream( query, params );
+
 // query first row, returns a single object
 const user = await sql.queryFirst( query, params );
 
@@ -48,11 +51,11 @@ Sometimes you need to execute multiple queries in a transaction. Don't worry, we
 
 ``` js
 
-const result = await sql.transaction( sql.read_uncommitted, tx = {
+const result = await sql.transaction( sql.read_uncommitted, tx => {
 	const userId = 11;
 	const groupId = 89;
 
-    await tx.execute(
+	await tx.execute(
 		"INSERT INTO Users(id, name) values(@id, @name)",
 		{
 			id: { val: userId, type: sql.int },
