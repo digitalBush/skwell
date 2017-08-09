@@ -1,18 +1,20 @@
 const { TYPES } = require( "tedious" );
 
+const TypeWrapper = require( "./TypeWrapper" );
+
 module.exports =
 	Object.keys( TYPES ).reduce( ( acc, name ) => {
 		const type = TYPES[ name ];
 		const key = name.toLowerCase();
 
 		if ( type.maximumLength ) {
-			acc[ key ] = length => ( { type, length } );
+			acc[ key ] = length => new TypeWrapper( type, { length } );
 		} else if ( type.hasPrecision && type.hasScale ) {
-			acc[ key ] = ( precision, scale ) => ( { type, precision, scale } );
+			acc[ key ] = ( precision, scale ) => new TypeWrapper( type, { precision, scale } );
 		} else if ( type.hasScale ) {
-			acc[ key ] = scale => ( { type, scale } );
+			acc[ key ] = scale => new TypeWrapper( type, { scale } );
 		} else {
-			acc[ key ] = { type };
+			acc[ key ] = new TypeWrapper( type );
 		}
 
 		return acc;

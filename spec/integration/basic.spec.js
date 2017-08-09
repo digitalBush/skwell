@@ -65,6 +65,44 @@ describe( "Basic - Integration", () => {
 					{ id: 2, test: "B" }
 				] );
 		} );
+
+		it( "should work with an object array param", () => {
+			const query = `
+				SELECT *
+				FROM @users`;
+
+			return sql
+				.query( query, {
+					users: {
+						val: [ { id: 1 }, { id: 2 } ],
+						type: {
+							id: sql.int
+						}
+					}
+				} )
+				.should.eventually.deep.equal( [
+					{ id: 1 },
+					{ id: 2 }
+				] );
+		} );
+
+		it( "should work with a value array param", () => {
+			const query = `
+				SELECT value
+				FROM @userIds`;
+
+			return sql
+				.query( query, {
+					userIds: {
+						val: [ 1, 2 ],
+						type: sql.int
+					}
+				} )
+				.should.eventually.deep.equal( [
+					{ value: 1 },
+					{ value: 2 }
+				] );
+		} );
 	} );
 
 	describe( "queryStream", () => {
