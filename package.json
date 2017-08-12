@@ -7,6 +7,7 @@
     "test": "NODE_ENV=test mocha -r spec/init -R spec 'spec/**/*.spec.js'",
     "test:watch": "nodemon --exec \"NODE_ENV=test mocha -r spec/init -R spec 'spec/**/*.spec.js'\" -e js,json,sql",
     "sql:start": "docker-compose -f spec/setup/docker-compose.yml up -d",
+    "sql:wait": "docker exec -it skwell /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P P@ssw0rd -l 60 -Q \"SELECT 1\" > /dev/null",
     "sql:stop": "docker-compose -f spec/setup/docker-compose.yml down"
   },
   "author": "",

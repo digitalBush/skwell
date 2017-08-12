@@ -1,0 +1,22 @@
+language: node_js
+
+services:
+  - docker
+
+cache:
+  directories:
+    - "node_modules"
+
+before_install:
+  - docker pull microsoft/mssql-server-linux
+  - npm run sql:start
+
+before_script:
+  - npm prune
+
+script:
+  - npm run sql:wait
+  - npm run test
+
+after_script:
+  - npm run sql:stop
