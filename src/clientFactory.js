@@ -21,13 +21,14 @@ function promisifyConnection( conn ) {
 			} );
 		},
 		commitTransaction: promisify( conn.commitTransaction ),
-		rollbackTransaction: promisify( conn.rollbackTransaction )
+		rollbackTransaction: promisify( conn.rollbackTransaction ),
+		reset: promisify( conn.reset )
 	} );
 }
 
 function buildConfigs( config ) {
 	const poolConfig = Object.assign( { min: 1, max: 10 }, ( config.pool || {} ) );
-	// poolConfig.testOnBorrow = true //TODO: reset connection?
+	poolConfig.testOnBorrow = true;
 
 	const { username, password, server, domain, port, database } = config;
 	const tediousConfig = {
@@ -50,10 +51,13 @@ function buildConfigs( config ) {
 // TODO: timeouts
 function connect( config ) {
 	const configs = buildConfigs( config );
+
+	let id = 0;
 	const factory = {
 		create() {
 			return new Promise( ( resolve, reject ) => {
 				const conn = new tedious.Connection( configs.tedious );
+				conn.id = id++;
 				promisifyConnection( conn );
 
 				conn.on( "connect", err => {
@@ -63,6 +67,11 @@ function connect( config ) {
 					return resolve( conn );
 				} );
 			} );
+		},
+		validate( conn ) {
+			return conn.reset()
+				.then( x => true )
+				.catch( x => false );
 		},
 		destroy( conn ) {
 			return new Promise( resolve => {
