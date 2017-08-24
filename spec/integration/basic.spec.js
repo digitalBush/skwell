@@ -67,6 +67,56 @@ describe( "Basic - Integration", () => {
 		} );
 	} );
 
+	describe( "queryStream", () => {
+		it( "should work without params", done => {
+			const query = `
+				SELECT *
+				FROM QueryTests
+				ORDER BY id DESC`;
+
+			const stream = sql.queryStream( query );
+
+			const rows = [];
+			stream
+				.on( "data", data => {
+					rows.push( data );
+				} )
+				.on( "end", () => {
+					rows.should.deep.equal( [
+						{ id: 3, test: "C" },
+						{ id: 2, test: "B" },
+						{ id: 1, test: "A" }
+					] );
+					done();
+				} );
+		} );
+
+		it( "should work with params", done => {
+			const query = `
+				SELECT *
+				FROM QueryTests
+				WHERE id > @id
+				ORDER BY id DESC`;
+
+			const stream = sql.queryStream( query, {
+				id: { val: 1, type: sql.int }
+			} );
+
+			const rows = [];
+			stream
+				.on( "data", data => {
+					rows.push( data );
+				} )
+				.on( "end", () => {
+					rows.should.deep.equal( [
+						{ id: 3, test: "C" },
+						{ id: 2, test: "B" }
+					] );
+					done();
+				} );
+		} );
+	} );
+
 	describe( "queryFirst", () => {
 		it( "should work without params", () => {
 			const query = `

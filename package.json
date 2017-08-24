@@ -15,6 +15,7 @@
   "dependencies": {
     "callsites": "^2.0.0",
     "generic-pool": "^3.1.7",
+    "readable-stream": "^2.3.3",
     "tedious": "^2.0.0"
   },
   "devDependencies": {

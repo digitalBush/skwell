@@ -1,4 +1,5 @@
 const Request = require( "tedious" ).Request;
+const Readable = require( "readable-stream" ).Readable;
 
 const types = require( "./types" );
 const fileLoader = require( "./fileLoader" );
@@ -54,7 +55,7 @@ class Api {
 
 	async query( sql, params ) {
 		const _sql = await sql;
-		const results = await this.withConnection( conn => {
+		return this.withConnection( conn => {
 			const data = [];
 			return new Promise( ( resolve, reject ) => {
 				const request = new Request( _sql, err => {
@@ -64,12 +65,40 @@ class Api {
 					return resolve( data );
 				} );
 				addParams( request, params );
-				request.on( "row", obj => data.push( obj ) );
+				request.on( "row", obj => data.push( transformRow( obj ) ) );
 				conn.execSql( request );
 			} );
 		} );
+	}
 
-		return results.map( transformRow );
+	queryStream( sql, params ) {
+		const stream = new Readable( {
+			objectMode: true,
+			read( size ) {}
+		} );
+
+		this
+			.withConnection( conn => {
+				return new Promise( ( resolve, reject ) => {
+					const request = new Request( sql, err => {
+						if ( err ) {
+							return reject( err );
+						}
+						stream.push( null );
+						return resolve();
+					} );
+					addParams( request, params );
+					request.on( "row", obj => {
+						stream.push( transformRow( obj ) );
+					} );
+					conn.execSql( request );
+				} );
+			} )
+			.catch( err => {
+				stream.destroy( err );
+			} );
+
+		return stream;
 	}
 
 	async queryFirst( sql, params ) {
