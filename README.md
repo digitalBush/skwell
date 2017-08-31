@@ -47,6 +47,38 @@ const userId = await sql.queryValue( query, params );
 
 ```
 
+If you need to pass an array of parameters into your query, there are two ways to do so.
+
+### Simple Values
+Assign `val` to an array of simple values(strings, numbers, etc.) and `type` to be the sql type of each item. Skwell will create a table parameter with a single column named `value`
+``` js
+await sql.query( "select value from @ids", {
+	ids: {
+		val: [ 1, 2, 3 ],
+		type: sql.int
+	} );
+// [ { value: 1 }, { value: 2 }, { value: 3 } ]
+```
+
+### Complex Values
+Assign `val` to an array of objects and `type` to an object mapping properties to a sql type. Skwell will create a table paramater with multiple columns named after the object keys defined in `type`.
+``` js
+await sql.query( "select name from @people", {
+	people: {
+		val: [
+			{ id: 1, name: "Josh" },
+			{ id: 2, name: "Calvin" },
+			{ id: 3, name: "Jim"}
+		],
+		type: {
+			id: sql.int,
+			name: sql.nvarchar(100)
+		}
+	 } );
+// [ { name: "Josh" }, { name: "Calvin" }, { name: "Jim" } ]
+```
+
+
 Sometimes you need to execute multiple queries in a transaction. Don't worry, we've got you covered!
 
 ``` js

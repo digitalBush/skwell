@@ -8,6 +8,7 @@ module.exports = {
 		strict: [ "error", "global" ],
 		"init-declarations": 0,
 		"global-require": 0,
+		"max-lines": 0,
 		"padded-blocks": ["error", {
 			classes: "always",
 			blocks: "never",
