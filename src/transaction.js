@@ -30,7 +30,6 @@ class Transaction extends Api {
 			// TODO: wrap err instead of mangling message
 			err.message = `Automatic Rollback. Failed Because: ${ err.message }`;
 			await tx.rollback( err );
-			throw err;
 		}
 	}
 
@@ -43,10 +42,6 @@ class Transaction extends Api {
 	}
 
 	async rollback( err ) {
-		if ( this[ _state ].rolledBack ) {
-			return;
-		}
-
 		await this[ _state ].connection.rollbackTransaction();
 		this[ _state ].rolledBack = true;
 		throw err;
