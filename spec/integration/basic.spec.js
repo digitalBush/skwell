@@ -3,9 +3,9 @@ const { config } = testHelpers;
 const skwell = require( "src/" );
 describe( "Basic - Integration", () => {
 	let sql;
-	before( () => {
-		sql = skwell.connect( config );
-		return sql.execute( sql.fromFile( "sql/basic-setup" ) );
+	before( async () => {
+		sql = await skwell.connect( config );
+		await sql.execute( sql.fromFile( "sql/basic-setup" ) );
 	} );
 
 	after( () => {

@@ -3,9 +3,9 @@ const { config } = testHelpers;
 const skwell = require( "src/" );
 describe( "Connection Reset - Integration", () => {
 	let sql;
-	before( () => {
+	before( async () => {
 		const singleConnectionPoolConfig = Object.assign( {}, config, { pool: { min: 1, max: 1 } } );
-		sql = skwell.connect( singleConnectionPoolConfig );
+		sql = await skwell.connect( singleConnectionPoolConfig );
 	} );
 
 	after( () => {

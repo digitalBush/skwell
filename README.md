@@ -10,7 +10,7 @@ First we need to create a client.
 
 ``` js
 const skwell = require("skwell");
-const sql = sqwell.connect( {
+const sql = await sqwell.connect( {
 	username: "ima_user",
 	password: "sekret",
 	server: "localhost",
