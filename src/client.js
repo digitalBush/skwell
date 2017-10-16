@@ -17,7 +17,9 @@ class Client extends Api {
 			const result = await action( conn );
 			return result;
 		} finally {
-			await this[ _pool ].release( conn );
+			if ( conn ) {
+				await this[ _pool ].release( conn );
+			}
 		}
 	}
 

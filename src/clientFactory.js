@@ -27,10 +27,12 @@ function promisifyConnection( conn ) {
 }
 
 function buildConfigs( config ) {
-	const poolConfig = Object.assign( { min: 1, max: 10 }, ( config.pool || {} ) );
+	const { pool = {}, username, password, server, domain, port, database, connectTimeout = 15000 } = config;
+
+	const poolConfig = Object.assign( { min: 1, max: 10, acquireTimeoutMillis: connectTimeout }, pool );
 	poolConfig.testOnBorrow = true;
 
-	const { username, password, server, domain, port, database } = config;
+
 	const tediousConfig = {
 		userName: username,
 		password,
@@ -38,7 +40,8 @@ function buildConfigs( config ) {
 		domain,
 		options: {
 			port,
-			database
+			database,
+			connectTimeout
 		}
 	};
 
@@ -48,8 +51,7 @@ function buildConfigs( config ) {
 	};
 }
 
-// TODO: timeouts
-function connect( config ) {
+async function connect( config ) {
 	const configs = buildConfigs( config );
 
 	let id = 0;
@@ -82,7 +84,17 @@ function connect( config ) {
 			} );
 		}
 	};
-
+	try {
+		const conn = await factory.create();
+		conn.close();
+	} catch ( e ) {
+		const { password, ...configWithoutPassword } = config;
+		if ( password ) {
+			configWithoutPassword.password = "[REDACTED]";
+		}
+		const error = new Error( "Failed to connect." );
+		throw error;
+	}
 	const pool = genericPool.createPool( factory, configs.pool );
 
 	return new Client( pool );
