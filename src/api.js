@@ -1,4 +1,4 @@
-const Request = require( "tedious" ).Request;
+const { Request, ISOLATION_LEVEL } = require( "tedious" );
 const Readable = require( "readable-stream" ).Readable;
 
 const parameterBuilder = require( "./parameterBuilder" );
@@ -108,5 +108,11 @@ class Api {
 }
 
 Object.assign( Api.prototype, types );
+
+Object.keys( ISOLATION_LEVEL ).forEach( k => {
+	Api.prototype[ k.toLowerCase() ] = ISOLATION_LEVEL[ k ];
+} );
+
 Api.prototype.fromFile = fileLoader;
+
 module.exports = Api;
