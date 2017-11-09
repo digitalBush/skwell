@@ -3,8 +3,8 @@ const { config } = testHelpers;
 const skwell = require( "src/" );
 describe( "Transaction - Integration", () => {
 	let sql;
-	before( () => {
-		sql = skwell.connect( config );
+	before( async () => {
+		sql = await skwell.connect( config );
 		return sql.execute( sql.fromFile( "sql/transaction-setup.sql" ) );
 	} );
 
