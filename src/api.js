@@ -62,23 +62,23 @@ class Api {
 			read( size ) {}
 		} );
 
-		this
-			.withConnection( conn => {
-				return new Promise( ( resolve, reject ) => {
-					const request = new Request( sql, err => {
-						if ( err ) {
-							return reject( err );
-						}
-						stream.push( null );
-						return resolve();
-					} );
-					parameterBuilder( request, params );
-					request.on( "row", obj => {
-						stream.push( transformRow( obj ) );
-					} );
-					conn.execSql( request );
+		this.withConnection( async conn => {
+			const _sql = await sql;
+			return new Promise( ( resolve, reject ) => {
+				const request = new Request( _sql, err => {
+					if ( err ) {
+						return reject( err );
+					}
+					stream.push( null );
+					return resolve();
 				} );
-			} )
+				parameterBuilder( request, params );
+				request.on( "row", obj => {
+					stream.push( transformRow( obj ) );
+				} );
+				conn.execSql( request );
+			} );
+		} )
 			.catch( err => {
 				stream.destroy( err );
 			} );

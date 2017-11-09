@@ -7,7 +7,7 @@ const callsites = require( "callsites" );
 const readFileAsync = promisify( readFile );
 const cache = {};
 
-module.exports = function( relativeFile ) {
+module.exports = async function( relativeFile ) {
 	const relativeTo = path.dirname( callsites()[ 1 ].getFileName() );
 
 	if ( path.extname( relativeFile ) === "" ) {
@@ -17,7 +17,7 @@ module.exports = function( relativeFile ) {
 
 	let result = cache[ fileName ];
 	if ( !result ) {
-		result = cache[ fileName ] = readFileAsync( fileName, "utf8" );
+		result = cache[ fileName ] = await readFileAsync( fileName, "utf8" );
 	}
 	return result;
 };
