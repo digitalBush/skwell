@@ -33,6 +33,16 @@ describe( "Basic - Integration", () => {
 			} )
 				.should.eventually.equal( 1 );
 		} );
+
+		it( "should reject on a sql error", () => {
+			const query = `
+				UPDATE lol
+				SET nope=0
+				WHERE BadSql=1;`;
+
+			return sql.execute( query )
+				.should.be.rejectedWith( "Invalid object name 'lol'." );
+		} );
 	} );
 
 	describe( "query", () => {
@@ -103,6 +113,16 @@ describe( "Basic - Integration", () => {
 					{ value: 2 }
 				] );
 		} );
+
+		it( "should reject on a sql error", () => {
+			const query = `
+				SELECT *
+				FROM lol
+				WHERE BadSql=1;`;
+
+			return sql.query( query )
+				.should.be.rejectedWith( "Invalid object name 'lol'." );
+		} );
 	} );
 
 	describe( "queryStream", () => {
@@ -153,6 +173,20 @@ describe( "Basic - Integration", () => {
 					done();
 				} );
 		} );
+
+		it( "should produce a stream error when sql error", done => {
+			const query = `
+				SELECT *
+				FROM lol
+				WHERE BadSql=1;`;
+
+			const stream = sql.queryStream( query );
+
+			stream.on( "error", ( { message } ) => {
+				message.should.equal( "Invalid object name 'lol'." );
+				done();
+			} );
+		} );
 	} );
 
 	describe( "queryFirst", () => {
@@ -184,6 +218,16 @@ describe( "Basic - Integration", () => {
 					test: "A"
 				} );
 		} );
+
+		it( "should reject on a sql error", () => {
+			const query = `
+				SELECT TOP 1 *
+				FROM lol
+				WHERE BadSql=1;`;
+
+			return sql.query( query )
+				.should.be.rejectedWith( "Invalid object name 'lol'." );
+		} );
 	} );
 
 	describe( "queryValue", () => {
@@ -208,6 +252,27 @@ describe( "Basic - Integration", () => {
 				id: { val: 1, type: sql.int }
 			} )
 				.should.eventually.equal( "A" );
+		} );
+
+		it( "should return null when no data", () => {
+			const query = `
+				SELECT test
+				FROM QueryTests
+				WHERE 1=0
+				ORDER BY id DESC`;
+
+			return sql.queryValue( query )
+				.should.eventually.be.null();
+		} );
+
+		it( "should reject on a sql error", () => {
+			const query = `
+				SELECT sum(total)
+				FROM lol
+				WHERE BadSql=1;`;
+
+			return sql.query( query )
+				.should.be.rejectedWith( "Invalid object name 'lol'." );
 		} );
 	} );
 } );

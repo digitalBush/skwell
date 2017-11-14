@@ -5,8 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "test": "nyc -r text-summary mocha -r spec/init -R spec 'spec/**/*.spec.js'",
-	"test:watch": "nodemon --exec \"mocha -r spec/init -R spec 'spec/**/*.spec.js'\" -e js,json,sql",
-	"cover:show": "nyc report --reporter=html && open coverage/index.html",
+    "test:watch": "nodemon --exec \"mocha -r spec/init -R spec 'spec/**/*.spec.js' || true\" -e js,json,sql",
+    "cover:show": "nyc report --reporter=html && open coverage/index.html",
     "sql:start": "docker-compose -f spec/setup/docker-compose.yml up -d",
     "sql:wait": "docker exec -it skwell /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P P@ssw0rd -l 60 -Q \"SELECT 1\" > /dev/null",
     "sql:stop": "docker-compose -f spec/setup/docker-compose.yml down"
@@ -30,12 +30,15 @@
     "mocha": "^3.5.0",
     "nodemon": "^1.11.0",
     "nyc": "^11.1.0",
-    "sinon": "^3.0.0",
+    "proxyquire": "^1.8.0",
+    "sinon": "^3.3.0",
     "sinon-chai": "^2.12.0"
   },
   "nyc": {
-	"include": [ "src" ],
-	"cache": true,
+    "include": [
+      "src"
+    ],
+    "cache": true,
     "all": true
   }
 }

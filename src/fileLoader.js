@@ -5,9 +5,9 @@ const path = require( "path" );
 const callsites = require( "callsites" );
 
 const readFileAsync = promisify( readFile );
-const cache = {};
+const cache = new Map();
 
-module.exports = function( relativeFile ) {
+module.exports = async function( relativeFile ) {
 	const relativeTo = path.dirname( callsites()[ 1 ].getFileName() );
 
 	if ( path.extname( relativeFile ) === "" ) {
@@ -15,9 +15,10 @@ module.exports = function( relativeFile ) {
 	}
 	const fileName = path.resolve( relativeTo, relativeFile );
 
-	let result = cache[ fileName ];
+	let result = cache.get( fileName );
 	if ( !result ) {
-		result = cache[ fileName ] = readFileAsync( fileName, "utf8" );
+		result = await readFileAsync( fileName, "utf8" );
+		cache.set( fileName, result );
 	}
 	return result;
 };
