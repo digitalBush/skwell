@@ -15,24 +15,24 @@
   "license": "ISC",
   "dependencies": {
     "callsites": "^2.0.0",
-    "generic-pool": "^3.1.7",
+    "generic-pool": "^3.2.0",
     "readable-stream": "^2.3.3",
-    "tedious": "^2.0.0"
+    "tedious": "^2.1.4"
   },
   "devDependencies": {
     "app-module-path": "^2.2.0",
-    "chai": "^4.1.0",
+    "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
-    "coveralls": "^2.13.1",
+    "coveralls": "^2.13.3",
     "dirty-chai": "^2.0.1",
-    "eslint": "^4.3.0",
-    "eslint-config-leankit": "^4.1.0",
-    "mocha": "^3.5.0",
-    "nodemon": "^1.11.0",
-    "nyc": "^11.1.0",
+    "eslint": "^4.11.0",
+    "eslint-config-leankit": "^4.3.0",
+    "mocha": "^3.5.3",
+    "nodemon": "^1.12.1",
+    "nyc": "^11.3.0",
     "proxyquire": "^1.8.0",
-    "sinon": "^3.3.0",
-    "sinon-chai": "^2.12.0"
+    "sinon": "^4.1.2",
+    "sinon-chai": "^2.14.0"
   },
   "nyc": {
     "include": [
