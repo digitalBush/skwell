@@ -1,3 +1,5 @@
+const { ISOLATION_LEVEL } = require( "tedious" );
+
 const Api = require( "./api" );
 const Transaction = require( "./transaction" );
 
@@ -24,6 +26,10 @@ class Client extends Api {
 	}
 
 	transaction( isolationLevel, action ) {
+		if ( action === undefined ) {
+			action = isolationLevel;
+			isolationLevel = ISOLATION_LEVEL.READ_COMMITTED;
+		}
 		return this.withConnection( conn => Transaction.run( conn, isolationLevel, action ) );
 	}
 

@@ -47,7 +47,7 @@ describe( "clientFactory", () => {
 
 			setup();
 			connectionFactory.create.resolves( connection );
-			client = await clientFactory.connect( {} );
+			client = await clientFactory( {} );
 		} );
 
 		it( "should connect once", () => {
@@ -87,7 +87,7 @@ describe( "clientFactory", () => {
 			setup();
 			connectionFactory.create.rejects( new Error( "boom" ) );
 
-			clientPromise = clientFactory.connect( {
+			clientPromise = clientFactory( {
 				password: "sekret",
 				something: "else"
 			} );

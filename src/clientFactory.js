@@ -29,6 +29,4 @@ async function connect( config ) {
 	return new Client( pool );
 }
 
-module.exports = {
-	connect
-};
+module.exports = connect;
