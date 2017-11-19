@@ -13,26 +13,48 @@ function typeDeclarations( definition ) {
 	} );
 }
 
-function buildArrayParam( key, param ) {
+function addArrayParamExpansion( request, key, param ) {
+	const matcher = new RegExp( `(\\(\\s*@${ key }\\s*\\))|@${ key }\\b`, "ig" );
+	if ( param.val.length === 0 ) {
+		request.sqlTextOrProcedure = request.sqlTextOrProcedure.replace( matcher, "(SELECT 1 WHERE 1=0)" );
+		return;
+	}
+
+	const { type: { type, length, precision, scale } } = param;
+
+	const params = [];
+	let i = 0;
+	for ( const item of param.val ) {
+		const itemName = `${ key }${ i++ }`;
+		request.addParameter( itemName, type, item, { length, precision, scale } );
+		params.push( `@${ itemName }` );
+	}
+	request.sqlTextOrProcedure = request.sqlTextOrProcedure.replace( matcher, `(${ params.join( "," ) })` );
+}
+
+function addTableParam( request, key, param ) {
 	const typeList = typeDeclarations( param.type );
 
 	const table = typeList.map( ( { name, declaration } ) => `${ name } ${ declaration }` ).join( "," );
 	const json = typeList.map( ( { name, declaration } ) => `${ name } ${ declaration } '$.${ name }'` ).join( "," );
 
-	param.name = `${ key }Json`;
-	param.prepend = `
+	const prepend = `
 		DECLARE @${ key } TABLE (
 			${ table }
 		);
 		INSERT INTO @${ key }
 		SELECT * FROM
- 			OPENJSON ( @${ key }Json )
-			WITH (
-				${ json }
- 			);
-	`;
-	param.type = types.nvarchar( types.max );
-	param.val = JSON.stringify( param.val );
+		OPENJSON ( @${ key }Json )
+		WITH (
+			${ json }
+		);`;
+
+	const name = `${ key }Json`;
+	const type = types.nvarchar();
+	const val = JSON.stringify( param.val );
+
+	request.sqlTextOrProcedure = `${ prepend } ${ request.sqlTextOrProcedure }`;
+	request.addParameter( name, type.type, val );
 }
 
 module.exports = function( request, params ) {
@@ -45,17 +67,13 @@ module.exports = function( request, params ) {
 			param.type = param.type();
 		}
 
-		if ( Array.isArray( param.val ) ) {
-			// Value array is converted to Object array with a single property `value`
-			if ( param.type instanceof TypeWrapper ) {
-				param.type = { value: param.type };
-				param.val = param.val.map( value => ( { value } ) );
-			}
-			buildArrayParam( key, param );
-			request.sqlTextOrProcedure = `${ param.prepend } ${ request.sqlTextOrProcedure }`;
+		if ( !Array.isArray( param.val ) ) {
+			const { val, type: { type, length, precision, scale } } = param;
+			request.addParameter( key, type, val, { length, precision, scale } );
+		} else if ( param.type instanceof TypeWrapper ) {
+			addArrayParamExpansion( request, key, param );
+		} else {
+			addTableParam( request, key, param );
 		}
-
-		const { name, val, type: { type, length, precision, scale } } = param;
-		request.addParameter( name || key, type, val, { length, precision, scale } );
 	} );
 };
