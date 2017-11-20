@@ -1,5 +1,3 @@
-const { ISOLATION_LEVEL } = require( "tedious" );
-
 const Api = require( "./api" );
 
 const _state = Symbol( "skwell:tx-state" );
@@ -12,11 +10,6 @@ class Transaction extends Api {
 	}
 
 	static async run( connection, isolationLevel, action ) {
-		if ( action === undefined ) {
-			action = isolationLevel;
-			isolationLevel = ISOLATION_LEVEL.READ_COMMITTED;
-		}
-
 		const tx = new Transaction( connection );
 		try {
 			await connection.beginTransaction( "" /* name */, isolationLevel );

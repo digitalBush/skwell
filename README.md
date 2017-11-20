@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.org/digitalBush/skwell.svg?branch=master)](https://travis-ci.org/digitalBush/skwell)
 [![Coverage Status](https://coveralls.io/repos/github/digitalBush/skwell/badge.svg)](https://coveralls.io/github/digitalBush/skwell)
 
-A proof of concept promise based MS SQL library.
+A promised based SQL Server client with connection pooling.
 
 ## Getting Started
 
@@ -107,8 +107,8 @@ const result = await sql.transaction( sql.read_uncommitted, tx => {
 // If something would have broken, the transaction would have been rolled back.
 ```
 That's about it. 👍
-
 ## Running the tests (Dockerized SQL Server)
+**HEADS UP:** sql server needs 3.5gb of ram. You'll want to allocate more resources in docker.
 1. `npm install`
 1. `npm run sql:start` to get a local instance of sql server
 1. `npm test`
