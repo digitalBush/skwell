@@ -98,8 +98,9 @@ describe( "Basic - Integration", () => {
 
 		it( "should work with a value array param", () => {
 			const query = `
-				SELECT value
-				FROM @userIds`;
+				SELECT * from (select 1 id union select 2 union select 3 ) t
+				where t.id in @userIds
+			`;
 
 			return sql
 				.query( query, {
@@ -108,10 +109,23 @@ describe( "Basic - Integration", () => {
 						type: sql.int
 					}
 				} )
-				.should.eventually.deep.equal( [
-					{ value: 1 },
-					{ value: 2 }
-				] );
+				.should.eventually.deep.equal( [ { id: 1 }, { id: 2 } ] );
+		} );
+
+		it( "should work with a empty value array param", () => {
+			const query = `
+				SELECT * from (select 1 id union select 2 id ) t
+				where t.id in @userIds
+			`;
+
+			return sql
+				.query( query, {
+					userIds: {
+						val: [ ],
+						type: sql.int
+					}
+				} )
+				.should.eventually.deep.equal( [ ] );
 		} );
 
 		it( "should reject on a sql error", () => {
