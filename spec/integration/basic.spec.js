@@ -45,6 +45,29 @@ describe( "Basic - Integration", () => {
 		} );
 	} );
 
+	describe( "executeBatch", () => {
+		it( "should work with valid sql", () => {
+			const query = `
+				CREATE TABLE LOL( Funny nvarchar(20) );
+				INSERT INTO LOL VALUES( 'JOKE' );
+				DROP TABLE LOL;
+			`;
+
+			return sql.executeBatch( query )
+				.should.eventually.equal( 1 );
+		} );
+
+		it( "should reject on a sql error", () => {
+			const query = `
+				UPDATE lol
+				SET nope=0
+				WHERE BadSql=1;`;
+
+			return sql.executeBatch( query )
+				.should.be.rejectedWith( "Invalid object name 'lol'." );
+		} );
+	} );
+
 	describe( "query", () => {
 		it( "should work without params", () => {
 			const query = `
