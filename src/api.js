@@ -1,7 +1,7 @@
 const { Request, ISOLATION_LEVEL } = require( "tedious" );
 const Readable = require( "readable-stream" ).Readable;
 
-const parameterBuilder = require( "./parameterBuilder" );
+const { addRequestParams, addBulkLoadParam } = require( "./parameterBuilder" );
 const types = require( "./types" );
 const fileLoader = require( "./fileLoader" );
 
@@ -32,8 +32,24 @@ class Api {
 					}
 					return resolve( rowCount );
 				} );
-				parameterBuilder( request, params );
+				addRequestParams( request, params );
 				conn.execSql( request );
+			} );
+		} );
+	}
+
+	async executeBatch( sql ) {
+		const _sql = await sql;
+		return this.withConnection( conn => {
+			return new Promise( ( resolve, reject ) => {
+				const request = new Request( _sql, ( err, rowCount ) => {
+					if ( err ) {
+						return reject( err );
+					}
+					return resolve( rowCount );
+				} );
+
+				conn.execSqlBatch( request );
 			} );
 		} );
 	}
@@ -49,7 +65,7 @@ class Api {
 					}
 					return resolve( data );
 				} );
-				parameterBuilder( request, params );
+				addRequestParams( request, params );
 				request.on( "row", obj => data.push( transformRow( obj ) ) );
 				conn.execSql( request );
 			} );
@@ -59,7 +75,7 @@ class Api {
 	queryStream( sql, params ) {
 		const stream = new Readable( {
 			objectMode: true,
-			read( size ) {}
+			read() {}
 		} );
 
 		this.withConnection( async conn => {
@@ -72,7 +88,7 @@ class Api {
 					stream.push( null );
 					return resolve();
 				} );
-				parameterBuilder( request, params );
+				addRequestParams( request, params );
 				request.on( "row", obj => {
 					stream.push( transformRow( obj ) );
 				} );
@@ -103,6 +119,31 @@ class Api {
 			}
 		}
 		return null;
+	}
+
+	bulkLoad( tableName, options ) {
+		return this.withConnection( async conn => {
+			const bulk = conn.newBulkLoad( tableName );
+			addBulkLoadParam( bulk, options.schema );
+
+			if ( options.create ) {
+				await this.executeBatch( bulk.getTableCreationSql() );
+			}
+
+			for ( const row of options.rows ) {
+				bulk.addRow( row );
+			}
+
+			return new Promise( ( resolve, reject ) => {
+				bulk.callback = function ( err, rowCount ) {
+					if ( err ) {
+						return reject( err );
+					}
+					return resolve( rowCount );
+				};
+				conn.execBulkLoad( bulk );
+			} );
+		} );
 	}
 
 }

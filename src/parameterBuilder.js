@@ -57,23 +57,37 @@ function addTableParam( request, key, param ) {
 	request.addParameter( name, type.type, val );
 }
 
-module.exports = function( request, params ) {
-	if ( !params ) {
-		return;
-	}
-	Object.keys( params ).forEach( key => {
-		const param = params[ key ];
-		if ( typeof param.type === "function" ) {
-			param.type = param.type();
+module.exports = {
+	addRequestParams( request, params ) {
+		if ( !params ) {
+			return;
 		}
+		Object.keys( params ).forEach( key => {
+			const param = params[ key ];
+			if ( typeof param.type === "function" ) {
+				param.type = param.type();
+			}
 
-		if ( !Array.isArray( param.val ) ) {
-			const { val, type: { type, length, precision, scale } } = param;
-			request.addParameter( key, type, val, { length, precision, scale } );
-		} else if ( param.type instanceof TypeWrapper ) {
-			addArrayParamExpansion( request, key, param );
-		} else {
-			addTableParam( request, key, param );
-		}
-	} );
+			if ( !Array.isArray( param.val ) ) {
+				const { val, type: { type, length, precision, scale } } = param;
+				request.addParameter( key, type, val, { length, precision, scale } );
+			} else if ( param.type instanceof TypeWrapper ) {
+				addArrayParamExpansion( request, key, param );
+			} else {
+				addTableParam( request, key, param );
+			}
+		} );
+	},
+
+	addBulkLoadParam( bulk, schema ) {
+		Object.keys( schema ).forEach( name => {
+			const column = schema[ name ];
+
+			if ( typeof column.type === "function" ) {
+				column.type = column.type();
+			}
+			const { type: { type, length, precision, scale }, nullable } = column;
+			bulk.addColumn( name, type, { length, precision, scale, nullable: !!nullable } );
+		} );
+	}
 };

@@ -40,6 +40,15 @@ class Client extends Api {
 		} );
 	}
 
+	// Override base API to keep from loading a temp table on different connection.
+	async bulkLoad( tableName, options ) {
+		if ( tableName.indexOf( "#" ) >= 0 ) {
+			throw new Error( `Unable to load temp table '${ tableName }' using connection pool. Use a transaction instead.` );
+		}
+
+		return super.bulkLoad( tableName, options );
+	}
+
 }
 
 module.exports = Client;
