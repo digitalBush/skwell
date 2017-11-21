@@ -20,10 +20,7 @@ describe( "Bulk Load - Integration", () => {
 		it( "should not bulk load a temp table", () => {
 			return sql.bulkLoad( "#bulkloadnope", {
 				schema: {
-					id: {
-						type: sql.int,
-						nullable: false
-					}
+					id: sql.int
 				},
 				rows: [ { id: 1 } ]
 			} ).should.eventually.be.rejectedWith( Error, "Unable to load temp table '#bulkloadnope' using connection pool. Use a transaction instead." );
@@ -32,10 +29,7 @@ describe( "Bulk Load - Integration", () => {
 		it( "should bulk load a table", async () => {
 			await sql.bulkLoad( "BulkLoadTest", {
 				schema: {
-					id: {
-						type: sql.int,
-						nullable: true
-					}
+					id: sql.int.nullable()
 				},
 				rows: [ { id: 1 }, { id: 2 }, { id: 3 } ]
 			} );
@@ -47,10 +41,7 @@ describe( "Bulk Load - Integration", () => {
 			await sql.bulkLoad( "BulkLoadTestNew", {
 				create: true,
 				schema: {
-					id: {
-						type: sql.int,
-						nullable: true
-					}
+					id: sql.int.nullable()
 				},
 				rows: [ { id: 1 }, { id: 2 }, { id: 3 } ]
 			} );
@@ -61,10 +52,7 @@ describe( "Bulk Load - Integration", () => {
 		it( "should error when bulk loading a missing table without create", async () => {
 			return sql.bulkLoad( "BulkLoadTestWontBeThere", {
 				schema: {
-					id: {
-						type: sql.int,
-						nullable: true
-					}
+					id: sql.int.nullable()
 				},
 				rows: [ { id: 1 }, { id: 2 }, { id: 3 } ]
 			} ).should.eventually.be.rejectedWith( "Invalid object name 'BulkLoadTestWontBeThere'" );
@@ -77,10 +65,7 @@ describe( "Bulk Load - Integration", () => {
 				await tx.bulkLoad( "#bulkloadyep", {
 					create: true,
 					schema: {
-						id: {
-							type: sql.int,
-							nullable: false
-						}
+						id: sql.int.nullable( false )
 					},
 					rows: [ { id: 1 }, { id: 2 }, { id: 3 } ]
 				} );
@@ -93,10 +78,7 @@ describe( "Bulk Load - Integration", () => {
 			return sql.transaction( async tx => {
 				await tx.bulkLoad( "BulkLoadTest", {
 					schema: {
-						id: {
-							type: sql.int,
-							nullable: true
-						}
+						id: sql.int.nullable
 					},
 					rows: [ { id: 1 }, { id: 2 }, { id: 3 } ]
 				} );
@@ -110,10 +92,7 @@ describe( "Bulk Load - Integration", () => {
 				await tx.bulkLoad( "BulkLoadTestNew", {
 					create: true,
 					schema: {
-						id: {
-							type: sql.nvarchar,
-							nullable: true
-						}
+						id: sql.nvarchar.nullable
 					},
 					rows: [ { id: "1" }, { id: "2" }, { id: "3" } ]
 				} );

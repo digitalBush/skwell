@@ -4,7 +4,10 @@ const TypeWrapper = require( "./TypeWrapper" );
 
 function typeDeclarations( definition ) {
 	return Object.keys( definition ).map( name => {
-		const column = definition[ name ];
+		let column = definition[ name ];
+		if ( typeof column === "function" ) {
+			column = column();
+		}
 		const declaration = column.type.declaration( column );
 		return {
 			name,
@@ -81,12 +84,12 @@ module.exports = {
 
 	addBulkLoadParam( bulk, schema ) {
 		Object.keys( schema ).forEach( name => {
-			const column = schema[ name ];
+			let column = schema[ name ];
 
-			if ( typeof column.type === "function" ) {
-				column.type = column.type();
+			if ( typeof column === "function" ) {
+				column = column();
 			}
-			const { type: { type, length, precision, scale }, nullable } = column;
+			const { type, length, precision, scale, isNull: nullable } = column;
 			bulk.addColumn( name, type, { length, precision, scale, nullable: !!nullable } );
 		} );
 	}

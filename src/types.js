@@ -14,8 +14,12 @@ module.exports =
 		} else if ( type.hasScale ) {
 			acc[ key ] = scale => new TypeWrapper( type, { scale } );
 		} else {
-			acc[ key ] = new TypeWrapper( type );
+			acc[ key ] = () => new TypeWrapper( type );
 		}
+
+		acc[ key ].nullable = function( val ) {
+			return acc[ key ]().nullable( val );
+		};
 
 		return acc;
 	}, { max: null } );

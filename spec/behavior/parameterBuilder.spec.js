@@ -16,7 +16,7 @@ describe( "parameterBuilder", () => {
 		{ name: "parens and spaces", sql: "SELECT * FROM lol WHERE foo in ( @bars )" }
 	].forEach( scenario => {
 		it( `should expand array params: ${ scenario.name }`, () => {
-			const expectedType = types.int.type;
+			const expectedType = types.int().type;
 			const expectedTypeOptions = { length: undefined, precision: undefined, scale: undefined };
 
 			const req = getRequest( scenario.sql );

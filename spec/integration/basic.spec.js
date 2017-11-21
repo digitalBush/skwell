@@ -107,15 +107,16 @@ describe( "Basic - Integration", () => {
 			return sql
 				.query( query, {
 					users: {
-						val: [ { id: 1 }, { id: 2 } ],
+						val: [ { id: 1, name: "Josh" }, { id: 2, name: "Calvin" } ],
 						type: {
-							id: sql.int
+							id: sql.int,
+							name: sql.nvarchar( 20 )
 						}
 					}
 				} )
 				.should.eventually.deep.equal( [
-					{ id: 1 },
-					{ id: 2 }
+					{ id: 1, name: "Josh" },
+					{ id: 2, name: "Calvin" }
 				] );
 		} );
 
