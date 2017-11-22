@@ -1,6 +1,6 @@
 const { config } = testHelpers;
 
-const skwell = require( "src/" );
+const skwell = require( "src" );
 describe( "Bulk Load - Integration", () => {
 	let sql;
 	before( async () => {
@@ -9,8 +9,10 @@ describe( "Bulk Load - Integration", () => {
 	} );
 
 	afterEach( async () => {
-		await sql.execute( "DELETE FROM BulkLoadTest" );
-		await sql.execute( "DROP TABLE IF EXISTS BulkLoadTestNew" );
+		await sql.execute( `
+			DELETE FROM BulkLoadTest;
+			DROP TABLE IF EXISTS BulkLoadTestNew;
+		` );
 	} );
 
 	after( () => {
@@ -41,12 +43,13 @@ describe( "Bulk Load - Integration", () => {
 			await sql.bulkLoad( "BulkLoadTestNew", {
 				create: true,
 				schema: {
-					id: sql.int.nullable()
+					id: sql.int,
+					other: sql.int.nullable()
 				},
-				rows: [ { id: 1 }, { id: 2 }, { id: 3 } ]
+				rows: [ { id: 1, other: 1 }, { id: 2 }, { id: 3 } ]
 			} );
 			const rows = await sql.query( "select * from BulkLoadTestNew" );
-			rows.should.deep.equal( [ { id: 1 }, { id: 2 }, { id: 3 } ] );
+			rows.should.deep.equal( [ { id: 1, other: 1 }, { id: 2, other: null }, { id: 3, other: null } ] );
 		} );
 
 		it( "should error when bulk loading a missing table without create", async () => {

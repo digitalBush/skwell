@@ -1,6 +1,6 @@
 const { config } = testHelpers;
 
-const skwell = require( "src/" );
+const skwell = require( "src" );
 describe( "Basic - Integration", () => {
 	let sql;
 	before( async () => {

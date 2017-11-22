@@ -1,6 +1,6 @@
 const { config } = testHelpers;
 
-const skwell = require( "src/" );
+const skwell = require( "src" );
 describe( "Connection Error - Integration", () => {
 	it( "should fail when connecting to a bad server", async () => {
 		const singleConnectionPoolConfig = Object.assign( {}, config, { database: "NOTREAL", connectTimeout: 1000 } );
