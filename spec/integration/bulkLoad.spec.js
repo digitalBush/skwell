@@ -19,13 +19,16 @@ describe( "Bulk Load - Integration", () => {
 		return sql.dispose();
 	} );
 	describe( "connection pool", () => {
-		it( "should not bulk load a temp table", () => {
-			return sql.bulkLoad( "#bulkloadnope", {
-				schema: {
-					id: sql.int
-				},
-				rows: [ { id: 1 } ]
-			} ).should.eventually.be.rejectedWith( Error, "Unable to load temp table '#bulkloadnope' using connection pool. Use a transaction instead." );
+		[ "[#temp]", "dbo.[#temp]", "[dbo].[#temp]", "dbo.#temp", "#temp" ].forEach( table => {
+			it( `should not bulk load a temp table - ${ table }`, () => {
+				return sql.bulkLoad( table, {
+					create: true,
+					schema: {
+						id: sql.int
+					},
+					rows: [ { id: 1 } ]
+				} ).should.eventually.be.rejectedWith( Error, `Unable to load temp table '${ table }' using connection pool. Use a transaction instead.` );
+			} );
 		} );
 
 		it( "should bulk load a table", async () => {
@@ -63,17 +66,19 @@ describe( "Bulk Load - Integration", () => {
 	} );
 
 	describe( "transaction", () => {
-		it( "should bulk load a temp table", () => {
-			return sql.transaction( async tx => {
-				await tx.bulkLoad( "#bulkloadyep", {
-					create: true,
-					schema: {
-						id: sql.int.nullable( false )
-					},
-					rows: [ { id: 1 }, { id: 2 }, { id: 3 } ]
+		[ "[#temp]", "dbo.[#temp]", "[dbo].[#temp]", "dbo.#temp", "#temp" ].forEach( table => {
+			it( `should bulk load a temp table - ${ table }`, () => {
+				return sql.transaction( async tx => {
+					await tx.bulkLoad( table, {
+						create: true,
+						schema: {
+							id: sql.int.nullable( false )
+						},
+						rows: [ { id: 1 }, { id: 2 }, { id: 3 } ]
+					} );
+					const rows = await tx.query( `select * from ${ table }` );
+					rows.should.deep.equal( [ { id: 1 }, { id: 2 }, { id: 3 } ] );
 				} );
-				const rows = await tx.query( "select * from #bulkloadyep" );
-				rows.should.deep.equal( [ { id: 1 }, { id: 2 }, { id: 3 } ] );
 			} );
 		} );
 
