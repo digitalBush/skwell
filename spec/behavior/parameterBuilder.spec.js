@@ -16,12 +16,12 @@ describe( "parameterBuilder", () => {
 		{ name: "parens and spaces", sql: "SELECT * FROM lol WHERE foo in ( @bars )" }
 	].forEach( scenario => {
 		it( `should expand array params: ${ scenario.name }`, () => {
-			const expectedType = types.int.type;
+			const expectedType = types.int().type;
 			const expectedTypeOptions = { length: undefined, precision: undefined, scale: undefined };
 
 			const req = getRequest( scenario.sql );
 
-			parameterBuilder( req, {
+			parameterBuilder.addRequestParams( req, {
 				bars: {
 					val: [ 1, 2, 3 ],
 					type: types.int
@@ -40,7 +40,7 @@ describe( "parameterBuilder", () => {
 	it( "should provide empty set sql when expanding params on an empty list", () => {
 		const req = getRequest( "SELECT * FROM lol WHERE foo in @bars" );
 
-		parameterBuilder( req, {
+		parameterBuilder.addRequestParams( req, {
 			bars: {
 				val: [ ],
 				type: types.int

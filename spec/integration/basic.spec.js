@@ -1,6 +1,6 @@
 const { config } = testHelpers;
 
-const skwell = require( "src/" );
+const skwell = require( "src" );
 describe( "Basic - Integration", () => {
 	let sql;
 	before( async () => {
@@ -45,6 +45,29 @@ describe( "Basic - Integration", () => {
 		} );
 	} );
 
+	describe( "executeBatch", () => {
+		it( "should work with valid sql", () => {
+			const query = `
+				CREATE TABLE LOL( Funny nvarchar(20) );
+				INSERT INTO LOL VALUES( 'JOKE' );
+				DROP TABLE LOL;
+			`;
+
+			return sql.executeBatch( query )
+				.should.eventually.equal( 1 );
+		} );
+
+		it( "should reject on a sql error", () => {
+			const query = `
+				UPDATE lol
+				SET nope=0
+				WHERE BadSql=1;`;
+
+			return sql.executeBatch( query )
+				.should.be.rejectedWith( "Invalid object name 'lol'." );
+		} );
+	} );
+
 	describe( "query", () => {
 		it( "should work without params", () => {
 			const query = `
@@ -84,15 +107,16 @@ describe( "Basic - Integration", () => {
 			return sql
 				.query( query, {
 					users: {
-						val: [ { id: 1 }, { id: 2 } ],
+						val: [ { id: 1, name: "Josh" }, { id: 2, name: "Calvin" } ],
 						type: {
-							id: sql.int
+							id: sql.int,
+							name: sql.nvarchar( 20 )
 						}
 					}
 				} )
 				.should.eventually.deep.equal( [
-					{ id: 1 },
-					{ id: 2 }
+					{ id: 1, name: "Josh" },
+					{ id: 2, name: "Calvin" }
 				] );
 		} );
 

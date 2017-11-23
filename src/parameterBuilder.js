@@ -4,7 +4,10 @@ const TypeWrapper = require( "./TypeWrapper" );
 
 function typeDeclarations( definition ) {
 	return Object.keys( definition ).map( name => {
-		const column = definition[ name ];
+		let column = definition[ name ];
+		if ( typeof column === "function" ) {
+			column = column();
+		}
 		const declaration = column.type.declaration( column );
 		return {
 			name,
@@ -57,23 +60,37 @@ function addTableParam( request, key, param ) {
 	request.addParameter( name, type.type, val );
 }
 
-module.exports = function( request, params ) {
-	if ( !params ) {
-		return;
-	}
-	Object.keys( params ).forEach( key => {
-		const param = params[ key ];
-		if ( typeof param.type === "function" ) {
-			param.type = param.type();
+module.exports = {
+	addRequestParams( request, params ) {
+		if ( !params ) {
+			return;
 		}
+		Object.keys( params ).forEach( key => {
+			const param = params[ key ];
+			if ( typeof param.type === "function" ) {
+				param.type = param.type();
+			}
 
-		if ( !Array.isArray( param.val ) ) {
-			const { val, type: { type, length, precision, scale } } = param;
-			request.addParameter( key, type, val, { length, precision, scale } );
-		} else if ( param.type instanceof TypeWrapper ) {
-			addArrayParamExpansion( request, key, param );
-		} else {
-			addTableParam( request, key, param );
-		}
-	} );
+			if ( !Array.isArray( param.val ) ) {
+				const { val, type: { type, length, precision, scale } } = param;
+				request.addParameter( key, type, val, { length, precision, scale } );
+			} else if ( param.type instanceof TypeWrapper ) {
+				addArrayParamExpansion( request, key, param );
+			} else {
+				addTableParam( request, key, param );
+			}
+		} );
+	},
+
+	addBulkLoadParam( bulk, schema ) {
+		Object.keys( schema ).forEach( name => {
+			let column = schema[ name ];
+
+			if ( typeof column === "function" ) {
+				column = column();
+			}
+			const { type, length, precision, scale, isNull: nullable } = column;
+			bulk.addColumn( name, type, { length, precision, scale, nullable: !!nullable } );
+		} );
+	}
 };

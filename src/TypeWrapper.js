@@ -9,4 +9,9 @@ module.exports = class TypeWrapper {
 		}
 	}
 
+	nullable( val = true ) {
+		this.isNull = val;
+		return this;
+	}
+
 };

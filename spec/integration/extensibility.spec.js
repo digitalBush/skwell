@@ -1,6 +1,6 @@
 const { config } = testHelpers;
 
-const skwell = require( "src/" );
+const skwell = require( "src" );
 describe( "Extensibility - Integration", () => {
 	describe( "can intercept transaction", () => {
 		let origRun, sql;
