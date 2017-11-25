@@ -83,6 +83,26 @@ describe( "Basic - Integration", () => {
 				] );
 		} );
 
+		it( "should work with multiple sets", () => {
+			const query = `
+				SELECT *
+				FROM QueryTests
+				ORDER BY id DESC;
+
+				SELECT sum(id)
+				FROM QueryTests`;
+
+			return sql.query( query )
+				.should.eventually.deep.equal( [
+					[
+						{ id: 3, test: "C" },
+						{ id: 2, test: "B" },
+						{ id: 1, test: "A" }
+					],
+					[ { "": 6 } ]
+				] );
+		} );
+
 		it( "should work with params", () => {
 			const query = `
 				SELECT *

@@ -57,15 +57,26 @@ class Api {
 	async query( sql, params ) {
 		const _sql = await sql;
 		return this.withConnection( conn => {
-			const data = [];
+			const sets = [];
+			let data;
 			return new Promise( ( resolve, reject ) => {
 				const request = new Request( _sql, err => {
 					if ( err ) {
 						return reject( err );
 					}
+					if ( sets.length ) {
+						sets.push( data );
+						return resolve( sets );
+					}
 					return resolve( data );
 				} );
 				addRequestParams( request, params );
+				request.on( "columnMetadata", () => {
+					if ( data ) {
+						sets.push( data );
+					}
+					data = [];
+				} );
 				request.on( "row", obj => data.push( transformRow( obj ) ) );
 				conn.execSql( request );
 			} );
