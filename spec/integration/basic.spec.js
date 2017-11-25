@@ -99,7 +99,7 @@ describe( "Basic - Integration", () => {
 						{ id: 2, test: "B" },
 						{ id: 1, test: "A" }
 					],
-					[ { "": 6 } ]
+					[ { 0: 6 } ]
 				] );
 		} );
 

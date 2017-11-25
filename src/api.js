@@ -9,8 +9,8 @@ function transformRow( row ) {
 	// TODO: maybe we need to make some decisions based on the sql type?
 	// TODO: opportunity to camelCase here?
 	// TODO: maybe we need to give the user the power to take over here?
-	return row.reduce( ( acc, col ) => {
-		acc[ col.metadata.colName ] = col.value;
+	return row.reduce( ( acc, col, i ) => {
+		acc[ col.metadata.colName || i ] = col.value;
 		return acc;
 	}, {} );
 }
@@ -58,26 +58,26 @@ class Api {
 		const _sql = await sql;
 		return this.withConnection( conn => {
 			const sets = [];
-			let data;
+			let rows;
 			return new Promise( ( resolve, reject ) => {
 				const request = new Request( _sql, err => {
 					if ( err ) {
 						return reject( err );
 					}
 					if ( sets.length ) {
-						sets.push( data );
+						sets.push( rows );
 						return resolve( sets );
 					}
-					return resolve( data );
+					return resolve( rows );
 				} );
 				addRequestParams( request, params );
 				request.on( "columnMetadata", () => {
-					if ( data ) {
-						sets.push( data );
+					if ( rows ) {
+						sets.push( rows );
 					}
-					data = [];
+					rows = [];
 				} );
-				request.on( "row", obj => data.push( transformRow( obj ) ) );
+				request.on( "row", obj => rows.push( transformRow( obj ) ) );
 				conn.execSql( request );
 			} );
 		} );
