@@ -15,11 +15,6 @@ function transformRow( row ) {
 	}, {} );
 }
 
-// TODO: implement the following:
-// - multiple result sets
-// - bulk loading
-// - streaming
-
 class Api {
 
 	async execute( sql, params ) {
@@ -54,7 +49,7 @@ class Api {
 		} );
 	}
 
-	async query( sql, params ) {
+	async querySets( sql, params ) {
 		const _sql = await sql;
 		return this.withConnection( conn => {
 			const sets = [];
@@ -64,11 +59,10 @@ class Api {
 					if ( err ) {
 						return reject( err );
 					}
-					if ( sets.length ) {
+					if ( rows !== undefined ) {
 						sets.push( rows );
-						return resolve( sets );
 					}
-					return resolve( rows );
+					return resolve( sets );
 				} );
 				addRequestParams( request, params );
 				request.on( "columnMetadata", () => {
@@ -81,6 +75,14 @@ class Api {
 				conn.execSql( request );
 			} );
 		} );
+	}
+
+	async query( sql, params ) {
+		const sets = await this.querySets( sql, params );
+		if ( sets && sets.length > 1 ) {
+			throw new Error( "Query returns more than one set of data. Use querySets method to return multiple sets of data." );
+		}
+		return sets[ 0 ] || [];
 	}
 
 	queryStream( sql, params ) {
