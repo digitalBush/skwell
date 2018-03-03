@@ -10,7 +10,7 @@ function connectionPool( config ) {
 }
 
 function tedious( config ) {
-	const { username, password, server, domain, port = DEFAULT_PORT, database, connectTimeout = DEFAULT_TIMEOUT } = config;
+	const { username, password, server, domain, port = DEFAULT_PORT, database, connectTimeout = DEFAULT_TIMEOUT, encrypt = false } = config;
 	return {
 		userName: username,
 		password,
@@ -19,7 +19,8 @@ function tedious( config ) {
 		options: {
 			port,
 			database,
-			connectTimeout
+			connectTimeout,
+			encrypt
 		}
 	};
 }
