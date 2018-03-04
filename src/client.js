@@ -1,9 +1,10 @@
 const { ISOLATION_LEVEL } = require( "tedious" );
+const { createNamespace } = require( "cls-hooked" );
 
 const Api = require( "./api" );
-const Transaction = require( "./transaction" );
 
 const _pool = Symbol( "skwell:pool" );
+const cls = createNamespace( "skwell" );
 
 class Client extends Api {
 
@@ -14,23 +15,37 @@ class Client extends Api {
 
 	async withConnection( action ) {
 		let conn;
+		const ambientConn = cls.get( "transaction" );
 		try {
-			conn = await this[ _pool ].acquire();
+			conn = ambientConn || await this[ _pool ].acquire();
 			const result = await action( conn );
 			return result;
 		} finally {
-			if ( conn ) {
+			if ( conn && !ambientConn ) {
 				await this[ _pool ].release( conn );
 			}
 		}
 	}
 
-	transaction( isolationLevel, action ) {
-		if ( action === undefined ) {
-			action = isolationLevel;
+	transaction( action, isolationLevel ) {
+		if ( isolationLevel === undefined ) {
 			isolationLevel = ISOLATION_LEVEL.READ_COMMITTED;
 		}
-		return this.withConnection( conn => Transaction.run( conn, isolationLevel, action ) );
+		return cls.runAndReturn( () => this.withConnection( async conn => {
+			cls.set( "transaction", conn );
+
+			try {
+				await conn.beginTransaction( "" /* name */, isolationLevel );
+				const result = await action();
+				await conn.commitTransaction();
+				return result;
+			} catch ( err ) {
+				// TODO: wrap err instead of mangling message
+				err.message = `Automatic Rollback. Failed Because: ${ err.message }`;
+				await conn.rollbackTransaction();
+				throw err;
+			}
+		} ) );
 	}
 
 	async dispose() {
@@ -43,7 +58,7 @@ class Client extends Api {
 	// Override base API to keep from loading a temp table on different connection.
 	async bulkLoad( tableName, options ) {
 		const name = tableName.split( "." ).pop().replace( "[", "" );
-		if ( name.indexOf( "#" ) === 0 ) {
+		if ( name.indexOf( "#" ) === 0 && !cls.get( "transaction" ) ) {
 			throw new Error( `Unable to load temp table '${ tableName }' using connection pool. Use a transaction instead.` );
 		}
 

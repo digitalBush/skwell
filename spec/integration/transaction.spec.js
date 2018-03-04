@@ -29,15 +29,15 @@ describe( "Transaction - Integration", () => {
 			where session_id = @@SPID`;
 
 		it( "should default to read committed isolation level", async () => {
-			await sql.transaction( async tx => {
-				return tx.queryValue( isolationLevelQuery );
+			await sql.transaction( async () => {
+				return sql.queryValue( isolationLevelQuery );
 			} ).should.eventually.equal( "ReadCommitted" );
 		} );
 
 		it( "should set isolation level", async () => {
-			await sql.transaction( sql.read_uncommitted, async tx => {
-				return tx.queryValue( isolationLevelQuery );
-			} ).should.eventually.equal( "ReadUncommitted" );
+			await sql.transaction( async () => {
+				return sql.queryValue( isolationLevelQuery );
+			}, sql.read_uncommitted ).should.eventually.equal( "ReadUncommitted" );
 		} );
 	} );
 
@@ -45,9 +45,9 @@ describe( "Transaction - Integration", () => {
 		it( "should roll back transaction when sql fails", async () => {
 			const expectedError = "Automatic Rollback. Failed Because: Invalid object name 'fake_table'.";
 
-			await sql.transaction( async tx => {
-				await tx.execute( "insert into MutationTests(id) values (1)" );
-				await tx.query( "select lol from fake_table" );
+			await sql.transaction( async () => {
+				await sql.execute( "insert into MutationTests(id) values (1)" );
+				await sql.query( "select lol from fake_table" );
 			} ).should.eventually.be.rejectedWith( expectedError );
 
 			const vals = await sql.query( "select * from MutationTests" );
@@ -55,20 +55,10 @@ describe( "Transaction - Integration", () => {
 		} );
 
 		it( "should roll back transaction when an error is thrown", async () => {
-			await sql.transaction( async tx => {
-				await tx.execute( "insert into MutationTests(id) values (1)" );
+			await sql.transaction( async () => {
+				await sql.execute( "insert into MutationTests(id) values (1)" );
 				throw new Error( "NOPE" );
 			} ).should.eventually.be.rejectedWith( "NOPE" );
-
-			const vals = await sql.query( "select * from MutationTests" );
-			vals.length.should.equal( 0 );
-		} );
-
-		it( "should roll back transaction when manually calling rollback", async () => {
-			await sql.transaction( async tx => {
-				await tx.execute( "insert into MutationTests(id) values (1)" );
-				await tx.rollback();
-			} ).should.eventually.be.rejectedWith( "Manual Rollback" );
 
 			const vals = await sql.query( "select * from MutationTests" );
 			vals.length.should.equal( 0 );
@@ -76,8 +66,8 @@ describe( "Transaction - Integration", () => {
 	} );
 
 	it( "should commit transaction when promise resolves", async () => {
-		await sql.transaction( async tx => {
-			await tx.execute( "insert into MutationTests(id) values (1)" );
+		await sql.transaction( async () => {
+			await sql.execute( "insert into MutationTests(id) values (1)" );
 		} );
 
 		const vals = await sql.query( "select * from MutationTests" );
