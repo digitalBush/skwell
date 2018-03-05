@@ -34,6 +34,9 @@ const insertedCount = await sql.execute(
 		name: { val: "josh", type: sql.nvarchar( 20 ) }
 	} );
 
+// querySets, returns an array of object arrays
+const usersWithPageInfo = await sql.querySets( query, params );
+
 // query, returns an array of objects
 const users = await sql.query( query, params );
 
@@ -51,14 +54,24 @@ const userId = await sql.queryValue( query, params );
 If you need to pass an array of parameters into your query, there are two ways to do so.
 
 ### Simple Values
-Assign `val` to an array of simple values(strings, numbers, etc.) and `type` to be the sql type of each item. Skwell will create a table parameter with a single column named `value`
+Assign `val` to an array of simple values(strings, numbers, etc.) and `type` to be the sql type of each item. Skwell will expand the parameter list and create one parameter per value.
 ``` js
-await sql.query( "select value from @ids", {
+await sql.query( "select * from my_table where id in @ids", {
 	ids: {
 		val: [ 1, 2, 3 ],
 		type: sql.int
 	} );
-// [ { value: 1 }, { value: 2 }, { value: 3 } ]
+// query gets expanded to "select * from my_table where id in (@ids0, @ids1, @ids2)
+```
+
+If you pass in an empty array, skwell will instead provide SQL that generates an empty set.
+``` js
+await sql.query( "select * from my_table where id in @ids", {
+	ids: {
+		val: [],
+		type: sql.int
+	} );
+// query gets expanded to "select * from my_table where id in (SELECT 1 WHERE 1=0)
 ```
 
 ### Complex Values

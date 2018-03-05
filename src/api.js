@@ -9,16 +9,11 @@ function transformRow( row ) {
 	// TODO: maybe we need to make some decisions based on the sql type?
 	// TODO: opportunity to camelCase here?
 	// TODO: maybe we need to give the user the power to take over here?
-	return row.reduce( ( acc, col ) => {
-		acc[ col.metadata.colName ] = col.value;
+	return row.reduce( ( acc, col, i ) => {
+		acc[ col.metadata.colName || i ] = col.value;
 		return acc;
 	}, {} );
 }
-
-// TODO: implement the following:
-// - multiple result sets
-// - bulk loading
-// - streaming
 
 class Api {
 
@@ -54,22 +49,40 @@ class Api {
 		} );
 	}
 
-	async query( sql, params ) {
+	async querySets( sql, params ) {
 		const _sql = await sql;
 		return this.withConnection( conn => {
-			const data = [];
+			const sets = [];
+			let rows;
 			return new Promise( ( resolve, reject ) => {
 				const request = new Request( _sql, err => {
 					if ( err ) {
 						return reject( err );
 					}
-					return resolve( data );
+					if ( rows !== undefined ) {
+						sets.push( rows );
+					}
+					return resolve( sets );
 				} );
 				addRequestParams( request, params );
-				request.on( "row", obj => data.push( transformRow( obj ) ) );
+				request.on( "columnMetadata", () => {
+					if ( rows ) {
+						sets.push( rows );
+					}
+					rows = [];
+				} );
+				request.on( "row", obj => rows.push( transformRow( obj ) ) );
 				conn.execSql( request );
 			} );
 		} );
+	}
+
+	async query( sql, params ) {
+		const sets = await this.querySets( sql, params );
+		if ( sets && sets.length > 1 ) {
+			throw new Error( "Query returns more than one set of data. Use querySets method to return multiple sets of data." );
+		}
+		return sets[ 0 ] || [];
 	}
 
 	queryStream( sql, params ) {

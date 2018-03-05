@@ -68,6 +68,64 @@ describe( "Basic - Integration", () => {
 		} );
 	} );
 
+	describe( "querySets", () => {
+		it( "should work without params", () => {
+			const query = `
+				SELECT *
+				FROM QueryTests
+				ORDER BY id DESC;
+
+				SELECT sum(id)
+				FROM QueryTests;`;
+
+			return sql.querySets( query )
+				.should.eventually.deep.equal( [
+					[
+						{ id: 3, test: "C" },
+						{ id: 2, test: "B" },
+						{ id: 1, test: "A" }
+					],
+					[ { 0: 6 } ]
+				] );
+		} );
+
+		it( "should work with params", () => {
+			const query = `
+				SELECT *
+				FROM QueryTests
+				WHERE id > @id
+				ORDER BY id DESC;
+
+				SELECT sum(id)
+				FROM QueryTests
+				WHERE id > @id;`;
+
+			return sql.querySets( query, {
+				id: { val: 1, type: sql.int }
+			} )
+				.should.eventually.deep.equal( [
+					[
+						{ id: 3, test: "C" },
+						{ id: 2, test: "B" }
+					],
+					[ { 0: 5 } ]
+				] );
+		} );
+
+		it( "should reject on a sql error", () => {
+			const query = `
+				SELECT *
+				FROM QueryTests
+				ORDER BY id DESC;
+
+				SELECT sum(id)
+				FROM QueryTests;`;
+
+			return sql.query( query )
+				.should.be.rejectedWith( "Query returns more than one set of data. Use querySets method to return multiple sets of data." );
+		} );
+	} );
+
 	describe( "query", () => {
 		it( "should work without params", () => {
 			const query = `
@@ -152,7 +210,24 @@ describe( "Basic - Integration", () => {
 				.should.eventually.deep.equal( [ ] );
 		} );
 
+		it( "should return an empty array when sql returns nothing", () => {
+			const query = "";
+
+			return sql.query( query )
+				.should.eventually.deep.equal( [] );
+		} );
+
 		it( "should reject on a sql error", () => {
+			const query = `
+				SELECT *
+				FROM lol
+				WHERE BadSql=1;`;
+
+			return sql.query( query )
+				.should.be.rejectedWith( "Invalid object name 'lol'." );
+		} );
+
+		it( "should reject when query returns more than one set of data", () => {
 			const query = `
 				SELECT *
 				FROM lol
