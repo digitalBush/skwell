@@ -1,3 +1,6 @@
+const EventEmitter = require( "events" );
+const pEvent = require( "p-event" );
+
 const { config } = testHelpers;
 
 const skwell = require( "src" );
@@ -63,6 +66,39 @@ describe( "Transaction - Integration", () => {
 			const vals = await sql.query( "select * from MutationTests" );
 			vals.length.should.equal( 0 );
 		} );
+	} );
+
+	it( "should not enlist ambient transaction outside of transaction scope", async () => {
+		const emitter = new EventEmitter();
+
+		const getId = function() {
+			return sql.queryValue( "select CURRENT_TRANSACTION_ID( ) " );
+		};
+
+		const tx1 = sql.transaction( async () => {
+			const txId = await getId();
+			await pEvent( emitter, "finished" );
+			const txId2 = await getId();
+
+			txId.should.equal( txId2 );
+
+			return txId;
+		} );
+
+		const tx2 = sql.transaction( async () => {
+			const txId = await getId();
+			emitter.emit( "finished" );
+			const txId2 = await getId();
+
+			txId.should.equal( txId2 );
+
+			return txId;
+		} );
+
+		const [ txId1, txId2, txId3 ] = await Promise.all( [ tx1, tx2, getId() ] );
+		txId1.should.not.equal( txId2 );
+		txId1.should.not.equal( txId3 );
+		txId2.should.not.equal( txId3 );
 	} );
 
 	it( "should commit transaction when promise resolves", async () => {
