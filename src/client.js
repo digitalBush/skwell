@@ -4,18 +4,19 @@ const { createNamespace } = require( "cls-hooked" );
 const Api = require( "./api" );
 
 const _pool = Symbol( "skwell:pool" );
-const cls = createNamespace( "skwell" );
+const _cls = Symbol( "skwell:cls" );
 
 class Client extends Api {
 
 	constructor( pool ) {
 		super();
 		this[ _pool ] = pool;
+		this[ _cls ] = createNamespace( "skwell" );
 	}
 
 	async withConnection( action ) {
 		let conn;
-		const ambientConn = cls.get( "transaction" );
+		const ambientConn = this[ _cls ].get( "transaction" );
 		try {
 			conn = ambientConn || await this[ _pool ].acquire();
 			const result = await action( conn );
@@ -31,8 +32,8 @@ class Client extends Api {
 		if ( isolationLevel === undefined ) {
 			isolationLevel = ISOLATION_LEVEL.READ_COMMITTED;
 		}
-		return cls.runAndReturn( () => this.withConnection( async conn => {
-			cls.set( "transaction", conn );
+		return this[ _cls ].runAndReturn( () => this.withConnection( async conn => {
+			this[ _cls ].set( "transaction", conn );
 
 			try {
 				await conn.beginTransaction( "" /* name */, isolationLevel );
@@ -58,7 +59,7 @@ class Client extends Api {
 	// Override base API to keep from loading a temp table on different connection.
 	async bulkLoad( tableName, options ) {
 		const name = tableName.split( "." ).pop().replace( "[", "" );
-		if ( name.indexOf( "#" ) === 0 && !cls.get( "transaction" ) ) {
+		if ( name.indexOf( "#" ) === 0 && !this[ _cls ].get( "transaction" ) ) {
 			throw new Error( `Unable to load temp table '${ tableName }' using connection pool. Use a transaction instead.` );
 		}
 

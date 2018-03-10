@@ -72,7 +72,7 @@ describe( "Transaction - Integration", () => {
 		const emitter = new EventEmitter();
 
 		const getId = function() {
-			return sql.queryValue( "select CURRENT_TRANSACTION_ID( ) " );
+			return sql.queryValue( "select CURRENT_TRANSACTION_ID()" );
 		};
 
 		const tx1 = sql.transaction( async () => {
@@ -99,6 +99,17 @@ describe( "Transaction - Integration", () => {
 		txId1.should.not.equal( txId2 );
 		txId1.should.not.equal( txId3 );
 		txId2.should.not.equal( txId3 );
+	} );
+
+	it( "should not enlist ambient transaction inside of transaction scope across clients", async () => {
+		const sql2 = await skwell.connect( config );
+
+		await sql.transaction( async () => {
+			const txId = await sql.queryValue( "select CURRENT_TRANSACTION_ID()" );
+			const txId2 = await sql2.queryValue( "select CURRENT_TRANSACTION_ID()" );
+			txId.should.not.equal( txId2 );
+		} );
+		sql2.dispose();
 	} );
 
 	it( "should commit transaction when promise resolves", async () => {
