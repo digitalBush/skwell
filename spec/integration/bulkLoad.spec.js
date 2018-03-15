@@ -68,43 +68,43 @@ describe( "Bulk Load - Integration", () => {
 	describe( "transaction", () => {
 		[ "[#temp]", "dbo.[#temp]", "[dbo].[#temp]", "dbo.#temp", "#temp" ].forEach( table => {
 			it( `should bulk load a temp table - ${ table }`, () => {
-				return sql.transaction( async tx => {
-					await tx.bulkLoad( table, {
+				return sql.transaction( async () => {
+					await sql.bulkLoad( table, {
 						create: true,
 						schema: {
 							id: sql.int.nullable( false )
 						},
 						rows: [ { id: 1 }, { id: 2 }, { id: 3 } ]
 					} );
-					const rows = await tx.query( `select * from ${ table }` );
+					const rows = await sql.query( `select * from ${ table }` );
 					rows.should.deep.equal( [ { id: 1 }, { id: 2 }, { id: 3 } ] );
 				} );
 			} );
 		} );
 
 		it( "should bulk load a table", () => {
-			return sql.transaction( async tx => {
-				await tx.bulkLoad( "BulkLoadTest", {
+			return sql.transaction( async () => {
+				await sql.bulkLoad( "BulkLoadTest", {
 					schema: {
 						id: sql.int.nullable
 					},
 					rows: [ { id: 1 }, { id: 2 }, { id: 3 } ]
 				} );
-				const rows = await tx.query( "select * from BulkLoadTest" );
+				const rows = await sql.query( "select * from BulkLoadTest" );
 				rows.should.deep.equal( [ { id: 1 }, { id: 2 }, { id: 3 } ] );
 			} );
 		} );
 
 		it( "should create and bulk load a table", () => {
-			return sql.transaction( async tx => {
-				await tx.bulkLoad( "BulkLoadTestNew", {
+			return sql.transaction( async () => {
+				await sql.bulkLoad( "BulkLoadTestNew", {
 					create: true,
 					schema: {
 						id: sql.nvarchar.nullable
 					},
 					rows: [ { id: "1" }, { id: "2" }, { id: "3" } ]
 				} );
-				const rows = await tx.query( "select * from BulkLoadTestNew" );
+				const rows = await sql.query( "select * from BulkLoadTestNew" );
 				rows.should.deep.equal( [ { id: "1" }, { id: "2" }, { id: "3" } ] );
 			} );
 		} );

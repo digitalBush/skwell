@@ -3,21 +3,20 @@ const { config } = testHelpers;
 const skwell = require( "src" );
 describe( "Extensibility - Integration", () => {
 	describe( "can intercept transaction", () => {
-		let origRun, sql;
+		let origTransaction, sql;
 
 		before( async () => {
-			origRun = skwell.Transaction.run;
+			origTransaction = skwell.Client.prototype.transaction;
 
 			// patch the transaction runner
-			skwell.Transaction.run = ( ...args ) => {
-				const action = args.pop();
-				args.push( async tx => {
-					await tx.execute( "insert into ExtensibilityTest(who) values('before')" );
-					const result = await action( tx );
-					await tx.execute( "insert into ExtensibilityTest(who) values('after')" );
+			skwell.Client.prototype.transaction = function( action, isolationLevel ) {
+				const wrappedAction = async () => {
+					await sql.execute( "insert into ExtensibilityTest(who) values('before')" );
+					const result = await action();
+					await sql.execute( "insert into ExtensibilityTest(who) values('after')" );
 					return result;
-				} );
-				return origRun( ...args );
+				};
+				return origTransaction.call( this, wrappedAction, isolationLevel );
 			};
 
 			sql = await skwell.connect( config );
@@ -25,13 +24,13 @@ describe( "Extensibility - Integration", () => {
 		} );
 
 		after( () => {
-			skwell.Transaction.run = origRun;
+			skwell.Client.prototype.transaction = origTransaction;
 			return sql.dispose();
 		} );
 
 		it( "should wrap transaction", async () => {
-			await sql.transaction( async tx => {
-				await tx.execute( "insert into ExtensibilityTest(who) values('middle')" );
+			await sql.transaction( async () => {
+				await sql.execute( "insert into ExtensibilityTest(who) values('middle')" );
 			} );
 
 			const results = await sql.query( "select who from ExtensibilityTest order by [order]" );

@@ -1,3 +1,6 @@
+const EventEmitter = require( "events" );
+const pEvent = require( "p-event" );
+
 const { config } = testHelpers;
 
 const skwell = require( "src" );
@@ -29,15 +32,15 @@ describe( "Transaction - Integration", () => {
 			where session_id = @@SPID`;
 
 		it( "should default to read committed isolation level", async () => {
-			await sql.transaction( async tx => {
-				return tx.queryValue( isolationLevelQuery );
+			await sql.transaction( async () => {
+				return sql.queryValue( isolationLevelQuery );
 			} ).should.eventually.equal( "ReadCommitted" );
 		} );
 
 		it( "should set isolation level", async () => {
-			await sql.transaction( sql.read_uncommitted, async tx => {
-				return tx.queryValue( isolationLevelQuery );
-			} ).should.eventually.equal( "ReadUncommitted" );
+			await sql.transaction( async () => {
+				return sql.queryValue( isolationLevelQuery );
+			}, sql.read_uncommitted ).should.eventually.equal( "ReadUncommitted" );
 		} );
 	} );
 
@@ -45,9 +48,9 @@ describe( "Transaction - Integration", () => {
 		it( "should roll back transaction when sql fails", async () => {
 			const expectedError = "Automatic Rollback. Failed Because: Invalid object name 'fake_table'.";
 
-			await sql.transaction( async tx => {
-				await tx.execute( "insert into MutationTests(id) values (1)" );
-				await tx.query( "select lol from fake_table" );
+			await sql.transaction( async () => {
+				await sql.execute( "insert into MutationTests(id) values (1)" );
+				await sql.query( "select lol from fake_table" );
 			} ).should.eventually.be.rejectedWith( expectedError );
 
 			const vals = await sql.query( "select * from MutationTests" );
@@ -55,29 +58,63 @@ describe( "Transaction - Integration", () => {
 		} );
 
 		it( "should roll back transaction when an error is thrown", async () => {
-			await sql.transaction( async tx => {
-				await tx.execute( "insert into MutationTests(id) values (1)" );
+			await sql.transaction( async () => {
+				await sql.execute( "insert into MutationTests(id) values (1)" );
 				throw new Error( "NOPE" );
 			} ).should.eventually.be.rejectedWith( "NOPE" );
 
 			const vals = await sql.query( "select * from MutationTests" );
 			vals.length.should.equal( 0 );
 		} );
+	} );
 
-		it( "should roll back transaction when manually calling rollback", async () => {
-			await sql.transaction( async tx => {
-				await tx.execute( "insert into MutationTests(id) values (1)" );
-				await tx.rollback();
-			} ).should.eventually.be.rejectedWith( "Manual Rollback" );
+	it( "should not enlist ambient transaction outside of transaction scope", async () => {
+		const emitter = new EventEmitter();
 
-			const vals = await sql.query( "select * from MutationTests" );
-			vals.length.should.equal( 0 );
+		const getId = function() {
+			return sql.queryValue( "select CURRENT_TRANSACTION_ID()" );
+		};
+
+		const tx1 = sql.transaction( async () => {
+			const txId = await getId();
+			await pEvent( emitter, "finished" );
+			const txId2 = await getId();
+
+			txId.should.equal( txId2 );
+
+			return txId;
 		} );
+
+		const tx2 = sql.transaction( async () => {
+			const txId = await getId();
+			emitter.emit( "finished" );
+			const txId2 = await getId();
+
+			txId.should.equal( txId2 );
+
+			return txId;
+		} );
+
+		const [ txId1, txId2, txId3 ] = await Promise.all( [ tx1, tx2, getId() ] );
+		txId1.should.not.equal( txId2 );
+		txId1.should.not.equal( txId3 );
+		txId2.should.not.equal( txId3 );
+	} );
+
+	it( "should not enlist ambient transaction inside of transaction scope across clients", async () => {
+		const sql2 = await skwell.connect( config );
+
+		await sql.transaction( async () => {
+			const txId = await sql.queryValue( "select CURRENT_TRANSACTION_ID()" );
+			const txId2 = await sql2.queryValue( "select CURRENT_TRANSACTION_ID()" );
+			txId.should.not.equal( txId2 );
+		} );
+		sql2.dispose();
 	} );
 
 	it( "should commit transaction when promise resolves", async () => {
-		await sql.transaction( async tx => {
-			await tx.execute( "insert into MutationTests(id) values (1)" );
+		await sql.transaction( async () => {
+			await sql.execute( "insert into MutationTests(id) values (1)" );
 		} );
 
 		const vals = await sql.query( "select * from MutationTests" );

@@ -10,7 +10,7 @@ First we need to create a client.
 
 ``` js
 const skwell = require("skwell");
-const sql = await sqwell.connect( {
+const sql = await skwell.connect( {
 	username: "ima_user",
 	password: "sekret",
 	server: "localhost",
@@ -97,24 +97,26 @@ Sometimes you need to execute multiple queries in a transaction. Don't worry, we
 
 ``` js
 
-const result = await sql.transaction( sql.read_uncommitted, tx => {
+const result = await sql.transaction( async () => {
 	const userId = 11;
 	const groupId = 89;
 
-	await tx.execute(
+	// any uses of `sql` within this transaction block will automatically happen on the transaction.
+
+	await sql.execute(
 		"INSERT INTO Users(id, name) values(@id, @name)",
 		{
 			id: { val: userId, type: sql.int },
 			name: { val: "josh", type: sql.nvarchar( 20 ) }
 		} );
 
-	await tx.execute(
+	await sql.execute(
 		"INSERT INTO Groups(id, userId) values(@id, @userId)",
 		{
 			id: { val: groupId, type: sql.int },
 			userId: { val: userId, type: sql.int }
 		} );
-});
+}, sql.read_uncommitted );
 
 // At this point, the transaction will be committed for you.
 // If something would have broken, the transaction would have been rolled back.
