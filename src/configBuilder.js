@@ -1,8 +1,9 @@
-const DEFAULT_TIMEOUT = 15000;
+const DEFAULT_CONNECT_TIMEOUT = 15000;
+const DEFAULT_REQUEST_TIMEOUT = 15000;
 const DEFAULT_PORT = 1433;
 
 function connectionPool( config ) {
-	const { pool = {}, connectTimeout = DEFAULT_TIMEOUT } = config;
+	const { pool = {}, connectTimeout = DEFAULT_CONNECT_TIMEOUT } = config;
 
 	const poolConfig = Object.assign( { min: 1, max: 10, acquireTimeoutMillis: connectTimeout }, pool );
 	poolConfig.testOnBorrow = true;
@@ -10,7 +11,16 @@ function connectionPool( config ) {
 }
 
 function tedious( config ) {
-	const { username, password, server, domain, port = DEFAULT_PORT, database, connectTimeout = DEFAULT_TIMEOUT, encrypt = false } = config;
+	const {
+		username,
+		password,
+		server,
+		domain,
+		port = DEFAULT_PORT,
+		database,
+		connectTimeout = DEFAULT_CONNECT_TIMEOUT,
+		requestTimeout = DEFAULT_REQUEST_TIMEOUT,
+		encrypt = false } = config;
 	return {
 		userName: username,
 		password,
@@ -20,6 +30,7 @@ function tedious( config ) {
 			port,
 			database,
 			connectTimeout,
+			requestTimeout,
 			encrypt
 		}
 	};
