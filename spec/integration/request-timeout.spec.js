@@ -9,6 +9,10 @@ describe( "Request Timeout - Integration", () => {
 		sql = await skwell.connect( lowRequestTimeout );
 	} );
 
+	after( () => {
+		return sql.dispose();
+	} );
+
 	it( "should succeed for fast requests", async () => {
 		const result = await sql.queryValue( "select 1" );
 		result.should.equal( 1 );
