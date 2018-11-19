@@ -18,7 +18,7 @@
     "cls-hooked": "^4.2.2",
     "generic-pool": "^3.4.2",
     "readable-stream": "^2.3.4",
-    "tedious": "^2.6.1"
+    "tedious": "^3.0.1"
   },
   "devDependencies": {
     "app-module-path": "^2.2.0",
