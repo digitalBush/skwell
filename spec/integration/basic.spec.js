@@ -254,9 +254,14 @@ describe( "Basic - Integration", () => {
 				} )
 				.on( "end", () => {
 					rows.should.deep.equal( [
-						{ id: 3, test: "C" },
-						{ id: 2, test: "B" },
-						{ id: 1, test: "A" }
+						{
+							metadata: {
+								columnNames: [ "id", "test" ]
+							}
+						},
+						{ row: { id: 3, test: "C" } },
+						{ row: { id: 2, test: "B" } },
+						{ row: { id: 1, test: "A" } }
 					] );
 					done();
 				} );
@@ -280,8 +285,13 @@ describe( "Basic - Integration", () => {
 				} )
 				.on( "end", () => {
 					rows.should.deep.equal( [
-						{ id: 3, test: "C" },
-						{ id: 2, test: "B" }
+						{
+							metadata: {
+								columnNames: [ "id", "test" ]
+							}
+						},
+						{ row: { id: 3, test: "C" } },
+						{ row: { id: 2, test: "B" } }
 					] );
 					done();
 				} );
