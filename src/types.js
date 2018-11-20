@@ -4,12 +4,10 @@ const TypeWrapper = require( "./TypeWrapper" );
 
 module.exports =
 	Object.keys( TYPES ).reduce( ( acc, name ) => {
-		if ( name.endsWith( "N" ) ) {
-			// Stop warnings introduced when upgrading to tedious 2.6.1.
-			// This can be removed when these types are removed from tedious.
+		if ( name.endsWith( "N" ) || name === "Null" ) {
+			// Stop deprecated type warnings from tedious.
 			return acc;
 		}
-
 		const type = TYPES[ name ];
 		const key = name.toLowerCase();
 

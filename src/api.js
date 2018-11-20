@@ -102,9 +102,17 @@ class Api {
 					return resolve();
 				} );
 				addRequestParams( request, params );
-				request.on( "row", obj => {
-					stream.push( transformRow( obj ) );
+
+				request.on( "columnMetadata", columns => {
+					stream.push( { metadata: {
+						columnNames: columns.map( ( { colName } ) => colName )
+					} } );
 				} );
+
+				request.on( "row", obj => {
+					stream.push( { row: transformRow( obj ) } );
+				} );
+
 				conn.execSql( request );
 			} );
 		} )
