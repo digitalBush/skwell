@@ -3,6 +3,7 @@ const tedious = require( "tedious" );
 
 function promisifyConnection( conn ) {
 	const originalBeginTransaction = conn.beginTransaction;
+	const originalClose = conn.close;
 
 	Object.assign( conn, {
 		beginTransaction( name, isolationLevel ) {
@@ -18,7 +19,15 @@ function promisifyConnection( conn ) {
 		},
 		commitTransaction: promisify( conn.commitTransaction ),
 		rollbackTransaction: promisify( conn.rollbackTransaction ),
-		reset: promisify( conn.reset )
+		reset: promisify( conn.reset ),
+		close() {
+			return new Promise( resolve => {
+				conn.once( "end", () => {
+					resolve();
+				} );
+				originalClose.call( conn );
+			} );
+		}
 	} );
 }
 

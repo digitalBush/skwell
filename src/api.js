@@ -1,19 +1,10 @@
 const { Request, ISOLATION_LEVEL } = require( "tedious" );
-const Readable = require( "readable-stream" ).Readable;
 
 const { addRequestParams, addBulkLoadParam } = require( "./parameterBuilder" );
 const types = require( "./types" );
 const fileLoader = require( "./fileLoader" );
-
-function transformRow( row ) {
-	// TODO: maybe we need to make some decisions based on the sql type?
-	// TODO: opportunity to camelCase here?
-	// TODO: maybe we need to give the user the power to take over here?
-	return row.reduce( ( acc, col, i ) => {
-		acc[ col.metadata.colName || i ] = col.value;
-		return acc;
-	}, {} );
-}
+const transformRow = require( "./transformRow" );
+const RequestStream = require( "./RequestStream" );
 
 class Api {
 
@@ -86,40 +77,19 @@ class Api {
 	}
 
 	queryStream( sql, params ) {
-		const stream = new Readable( {
-			objectMode: true,
-			read() {}
-		} );
-
+		const stream = new RequestStream( );
 		this.withConnection( async conn => {
 			const _sql = await sql;
-			return new Promise( ( resolve, reject ) => {
-				const request = new Request( _sql, err => {
-					if ( err ) {
-						return reject( err );
-					}
-					stream.push( null );
-					return resolve();
-				} );
-				addRequestParams( request, params );
+			stream.request.sqlTextOrProcedure = _sql;
 
-				request.on( "columnMetadata", columns => {
-					stream.push( { metadata: {
-						columnNames: columns.map( ( { colName } ) => colName )
-					} } );
-				} );
+			addRequestParams( stream.request, params );
 
-				request.on( "row", obj => {
-					stream.push( { row: transformRow( obj ) } );
-				} );
-
-				conn.execSql( request );
+			await new Promise( resolve => {
+				stream.on( "end", resolve );
+				stream.on( "error", resolve ); // Resolving here because there's no returned promise to catch these errors.
+				conn.execSql( stream.request );
 			} );
-		} )
-			.catch( err => {
-				stream.destroy( err );
-			} );
-
+		} );
 		return stream;
 	}
 

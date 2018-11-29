@@ -43,7 +43,11 @@ class Client extends Api {
 			} catch ( err ) {
 				// TODO: wrap err instead of mangling message
 				err.message = `Automatic Rollback. Failed Because: ${ err.message }`;
-				await conn.rollbackTransaction();
+				try {
+					await conn.rollbackTransaction();
+				} catch ( _ ) {
+					conn.close();
+				}
 				throw err;
 			}
 		} ) );
