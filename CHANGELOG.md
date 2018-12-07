@@ -1,5 +1,10 @@
 ## 2.x
 
+### 2.1.0
+
+* Bumped packages and adjusted test to use username from config.
+* Fixed stream behavior to honor backpressure
+
 ### 2.0.0
 
 * Updated all outdated packages.
