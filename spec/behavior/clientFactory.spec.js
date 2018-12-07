@@ -42,7 +42,7 @@ describe( "clientFactory", () => {
 
 		before( async () => {
 			connection = {
-				close: sinon.stub()
+				close: sinon.stub().resolves()
 			};
 
 			setup();

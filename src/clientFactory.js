@@ -11,15 +11,14 @@ async function connect( config ) {
 			return connectionFactory.create( configBuilder.tedious( config ) );
 		},
 		validate( conn ) {
-			return conn.reset();
+			if ( conn.state.name === "LoggedIn" ) {
+				return conn.reset();
+			}
+			conn.close();
+			return false;
 		},
 		destroy( conn ) {
-			return new Promise( resolve => {
-				conn.on( "end", () => {
-					resolve();
-				} );
-				conn.close();
-			} );
+			return conn.close();
 		}
 	};
 
