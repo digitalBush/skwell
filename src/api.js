@@ -114,7 +114,22 @@ class Api {
 
 	bulkLoad( tableName, options ) {
 		return this.withConnection( async conn => {
-			const bulk = conn.newBulkLoad( tableName );
+			const {
+				checkConstraints = false,
+				fireTriggers = false,
+				keepNulls = false,
+				tableLock = false
+			} = options;
+			const bulk = conn.newBulkLoad(
+				tableName,
+				{
+					checkConstraints,
+					fireTriggers,
+					keepNulls,
+					tableLock
+				},
+				/* istanbul ignore next: noop */ () => { /* avoiding async promise executor */ }
+			);
 			addBulkLoadParam( bulk, options.schema );
 
 			if ( options.create ) {
