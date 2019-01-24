@@ -1,3 +1,9 @@
+## 3.x
+
+### 3.0.0
+
+* Add abortTransactionOnError option with default to true
+
 ## 2.x
 
 ### 2.2.0
