@@ -20,7 +20,8 @@ function tedious( config ) {
 		database,
 		connectTimeout = DEFAULT_CONNECT_TIMEOUT,
 		requestTimeout = DEFAULT_REQUEST_TIMEOUT,
-		encrypt = false } = config;
+		encrypt = false,
+		abortTransactionOnError = true } = config;
 	return {
 		userName: username,
 		password,
@@ -31,7 +32,8 @@ function tedious( config ) {
 			database,
 			connectTimeout,
 			requestTimeout,
-			encrypt
+			encrypt,
+			abortTransactionOnError
 		}
 	};
 }
