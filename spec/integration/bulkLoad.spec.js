@@ -61,7 +61,9 @@ describe( "Bulk Load - Integration", () => {
 					id: sql.int.nullable()
 				},
 				rows: [ { id: 1 }, { id: 2 }, { id: 3 } ]
-			} ).should.eventually.be.rejectedWith( "Invalid object name 'BulkLoadTestWontBeThere'" );
+			} )
+				.should.eventually.be.rejectedWith( "Invalid object name 'BulkLoadTestWontBeThere'" )
+				.and.have.property( "stack" ).with.string( "bulkLoad.spec.js" );
 		} );
 	} );
 

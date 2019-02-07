@@ -41,7 +41,8 @@ describe( "Basic - Integration", () => {
 				WHERE BadSql=1;`;
 
 			return sql.execute( query )
-				.should.be.rejectedWith( "Invalid object name 'lol'." );
+				.should.eventually.be.rejectedWith( "Invalid object name 'lol'." )
+				.and.have.property( "stack" ).with.string( "basic.spec.js" );
 		} );
 	} );
 
@@ -64,7 +65,8 @@ describe( "Basic - Integration", () => {
 				WHERE BadSql=1;`;
 
 			return sql.executeBatch( query )
-				.should.be.rejectedWith( "Invalid object name 'lol'." );
+				.should.eventually.be.rejectedWith( "Invalid object name 'lol'." )
+				.and.have.property( "stack" ).with.string( "basic.spec.js" );
 		} );
 	} );
 
@@ -115,14 +117,15 @@ describe( "Basic - Integration", () => {
 		it( "should reject on a sql error", () => {
 			const query = `
 				SELECT *
-				FROM QueryTests
+				FROM Boom
 				ORDER BY id DESC;
 
 				SELECT sum(id)
 				FROM QueryTests;`;
 
-			return sql.query( query )
-				.should.be.rejectedWith( "Query returns more than one set of data. Use querySets method to return multiple sets of data." );
+			return sql.querySets( query )
+				.should.eventually.be.rejectedWith( "Invalid object name 'Boom'" )
+				.and.have.property( "stack" ).with.string( "basic.spec.js" );
 		} );
 	} );
 
@@ -162,16 +165,15 @@ describe( "Basic - Integration", () => {
 				SELECT *
 				FROM @users`;
 
-			return sql
-				.query( query, {
-					users: {
-						val: [ { id: 1, name: "Josh" }, { id: 2, name: "Calvin" } ],
-						type: {
-							id: sql.int,
-							name: sql.nvarchar( 20 )
-						}
+			return sql.query( query, {
+				users: {
+					val: [ { id: 1, name: "Josh" }, { id: 2, name: "Calvin" } ],
+					type: {
+						id: sql.int,
+						name: sql.nvarchar( 20 )
 					}
-				} )
+				}
+			} )
 				.should.eventually.deep.equal( [
 					{ id: 1, name: "Josh" },
 					{ id: 2, name: "Calvin" }
@@ -184,13 +186,12 @@ describe( "Basic - Integration", () => {
 				where t.id in @userIds
 			`;
 
-			return sql
-				.query( query, {
-					userIds: {
-						val: [ 1, 2 ],
-						type: sql.int
-					}
-				} )
+			return sql.query( query, {
+				userIds: {
+					val: [ 1, 2 ],
+					type: sql.int
+				}
+			} )
 				.should.eventually.deep.equal( [ { id: 1 }, { id: 2 } ] );
 		} );
 
@@ -224,17 +225,22 @@ describe( "Basic - Integration", () => {
 				WHERE BadSql=1;`;
 
 			return sql.query( query )
-				.should.be.rejectedWith( "Invalid object name 'lol'." );
+				.should.eventually.be.rejectedWith( "Invalid object name 'lol'." )
+				.and.have.property( "stack" ).with.string( "basic.spec.js" );
 		} );
 
 		it( "should reject when query returns more than one set of data", () => {
 			const query = `
 				SELECT *
-				FROM lol
-				WHERE BadSql=1;`;
+				FROM QueryTests;
+
+				SELECT *
+				FROM QueryTests;
+			`;
 
 			return sql.query( query )
-				.should.be.rejectedWith( "Invalid object name 'lol'." );
+				.should.eventually.be.rejectedWith( "Query returns more than one set of data. Use querySets method to return multiple sets of data." )
+				.and.have.property( "stack" ).with.string( "basic.spec.js" );
 		} );
 	} );
 
@@ -268,14 +274,46 @@ describe( "Basic - Integration", () => {
 				} );
 		} );
 
+		it( "should return null when result set is empty", () => {
+			const query = `
+				SELECT *
+				FROM QueryTests WHERE id = -999`;
+
+			return sql.queryFirst( query )
+				.should.eventually.be.null();
+		} );
+
+		it( "should return null when no data is returned", () => {
+			const query = `
+				DECLARE @lol bigint =0;
+			`;
+
+			return sql.queryFirst( query )
+				.should.eventually.be.null();
+		} );
+
 		it( "should reject on a sql error", () => {
 			const query = `
 				SELECT TOP 1 *
 				FROM lol
 				WHERE BadSql=1;`;
 
-			return sql.query( query )
+			return sql.queryFirst( query )
 				.should.be.rejectedWith( "Invalid object name 'lol'." );
+		} );
+
+		it( "should reject when query returns more than one set of data", () => {
+			const query = `
+				SELECT *
+				FROM QueryTests;
+
+				SELECT *
+				FROM QueryTests;
+			`;
+
+			return sql.queryFirst( query )
+				.should.eventually.be.rejectedWith( "Query returns more than one set of data. Use querySets method to return multiple sets of data." )
+				.and.have.property( "stack" ).with.string( "basic.spec.js" );
 		} );
 	} );
 
@@ -303,6 +341,24 @@ describe( "Basic - Integration", () => {
 				.should.eventually.equal( "A" );
 		} );
 
+		it( "should return null when result set is empty", () => {
+			const query = `
+				SELECT test
+				FROM QueryTests WHERE id = -999`;
+
+			return sql.queryValue( query )
+				.should.eventually.be.null();
+		} );
+
+		it( "should return null when no data is returned", () => {
+			const query = `
+				DECLARE @lol bigint =0;
+			`;
+
+			return sql.queryValue( query )
+				.should.eventually.be.null();
+		} );
+
 		it( "should return null when no data", () => {
 			const query = `
 				SELECT test
@@ -320,8 +376,23 @@ describe( "Basic - Integration", () => {
 				FROM lol
 				WHERE BadSql=1;`;
 
-			return sql.query( query )
-				.should.be.rejectedWith( "Invalid object name 'lol'." );
+			return sql.queryValue( query )
+				.should.eventually.be.rejectedWith( "Invalid object name 'lol'." )
+				.and.have.property( "stack" ).with.string( "basic.spec.js" );
+		} );
+
+		it( "should reject when query returns more than one set of data", () => {
+			const query = `
+				SELECT *
+				FROM QueryTests;
+
+				SELECT *
+				FROM QueryTests;
+			`;
+
+			return sql.queryValue( query )
+				.should.eventually.be.rejectedWith( "Query returns more than one set of data. Use querySets method to return multiple sets of data." )
+				.and.have.property( "stack" ).with.string( "basic.spec.js" );
 		} );
 	} );
 } );
