@@ -5,15 +5,21 @@ const transformRow = require( "./transformRow" );
 
 const _request = Symbol( "skwell:stream" );
 
+const STACK_DEPTH_TO_REMOVE = 2; // Remove message and constructor callsite lines
+
 class RequestStream extends Readable {
 
 	constructor( sql ) {
+		const callStack = new Error().stack;
 		super( {
 			objectMode: true
 		} );
 
 		const request = new Request( sql, err => {
 			if ( err ) {
+				const capturedStackParts = callStack.split( "\n" ).slice( STACK_DEPTH_TO_REMOVE );
+				capturedStackParts.unshift( err.toString() );
+				err.stack = capturedStackParts.join( "\n" );
 				this.destroy( err );
 			}
 			this.push( null );

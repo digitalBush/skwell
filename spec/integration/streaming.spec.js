@@ -113,8 +113,9 @@ describe( "Streaming - Integration", () => {
 
 		const stream = sql.queryStream( query );
 
-		stream.on( "error", ( { message } ) => {
-			message.should.equal( "Invalid object name 'lol'." );
+		stream.on( "error", err => {
+			err.message.should.equal( "Invalid object name 'lol'." );
+			err.stack.should.have.string( "streaming.spec.js" );
 			done();
 		} );
 	} );
@@ -136,6 +137,7 @@ describe( "Streaming - Integration", () => {
 		const readable = sql.queryStream( query );
 		readable.on( "error", err => {
 			err.message.should.equal( "Canceled." );
+			err.stack.should.have.string( "streaming.spec.js" );
 			done();
 		} );
 
@@ -156,7 +158,9 @@ describe( "Streaming - Integration", () => {
 			const readable = sql.queryStream( "SELECT 1 WHERE 1=0" );
 
 			await pumpAsync( [ readable, brokenWriter ] );
-		} ).should.eventually.be.rejectedWith( "Automatic Rollback. Failed Because: oops" );
+		} )
+			.should.eventually.be.rejectedWith( "Automatic Rollback. Failed Because: oops" );
+
 		const results = await sql.query( "SELECT * from MutationTests" );
 		results.should.deep.equal( [] );
 	} );
