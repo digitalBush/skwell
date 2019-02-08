@@ -1,5 +1,10 @@
 ## 3.x
 
+### 3.1.0
+
+* Capture call stack for stream errors to give better context when stuff breaks.
+* Capture call stack when querying to give better context on errors.
+
 ### 3.0.0
 
 * Add abortTransactionOnError option with default to true
