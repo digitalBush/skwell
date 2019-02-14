@@ -60,13 +60,111 @@ function addTableParam( request, key, param ) {
 	request.addParameter( name, type.type, val );
 }
 
+const defaultTypes = new Map( [
+	[ Date, types.datetime ],
+	[ Buffer, types.varbinary ]
+] );
+
+const nullType = () => new TypeWrapper( types.nvarchar().type );
+
+function getDefaultTypeFor( val ) {
+	if ( val === undefined || val === null ) {
+		return nullType;
+	}
+
+	switch ( typeof val ) {
+		case "string":
+			return types.nvarchar;
+
+		case "number":
+			if ( Number.isInteger( val ) ) {
+				return types.int;
+			}
+			return types.numeric;
+
+		case "boolean":
+			return types.bit;
+
+		case "object":
+			for ( const [ jsType, sqlType ] of defaultTypes.entries() ) {
+				if ( val instanceof jsType ) {
+					return sqlType;
+				}
+			}
+			break;
+		default:
+	}
+	return undefined; // No type to map
+}
+
+function buildParamUsingDefaultType( val ) {
+	const type = getDefaultTypeFor( val );
+	if ( type === undefined ) {
+		let helpfulOutput = JSON.stringify( val );
+		if ( helpfulOutput === undefined ) {
+			helpfulOutput = val.toString();
+		}
+		throw new Error( `Unable to provide a default sql type for ${ typeof( val ) } ${ helpfulOutput }` );
+	}
+
+	return {
+		type,
+		val
+	};
+}
+
+function buildArrayParamUsingDefaultType( val ) {
+	let type = val.reduce( ( acc, x ) => {
+		const itemType = getDefaultTypeFor( x );
+
+		if ( itemType === undefined ) {
+			let helpfulOutput = JSON.stringify( x );
+			if ( helpfulOutput === undefined ) {
+				helpfulOutput = x.toString();
+			}
+			throw new Error( `Unable to provide a default sql type for array item ${ typeof( x ) } ${ helpfulOutput }` );
+		}
+
+		if ( itemType === nullType ) {
+			return acc;
+		}
+
+		if ( acc === null ) {
+			return itemType;
+		}
+
+		if ( acc !== itemType ) {
+			throw new Error( "Unable to provide a default type for array with mixed types" );
+		}
+		return acc;
+	}, null );
+
+	if ( type === null ) {
+		type = nullType;
+	}
+
+	return {
+		type,
+		val
+	};
+}
+
 module.exports = {
 	addRequestParams( request, params ) {
 		if ( !params ) {
 			return;
 		}
 		Object.keys( params ).forEach( key => {
-			const param = params[ key ];
+			let param = params[ key ];
+
+			if ( param === null || param === undefined || ( !param.type && !param.val ) ) {
+				if ( Array.isArray( param ) ) {
+					param = buildArrayParamUsingDefaultType( param );
+				} else {
+					param = buildParamUsingDefaultType( param );
+				}
+			}
+
 			if ( typeof param.type === "function" ) {
 				param.type = param.type();
 			}
