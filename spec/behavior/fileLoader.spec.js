@@ -10,7 +10,7 @@ describe( "fileLoader", () => {
 
 		const loader = proxyquire( "src/fileLoader", {
 			fs
-		} );
+		} )( x => x );
 
 		await loader( "A" );
 		await loader( "A" );

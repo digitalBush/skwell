@@ -3,6 +3,7 @@ const { Request, ISOLATION_LEVEL } = require( "tedious" );
 const { addRequestParams, addBulkLoadParam } = require( "./parameterBuilder" );
 const types = require( "./types" );
 const fileLoader = require( "./fileLoader" );
+const templateBuilder = require( "./templateBuilder" );
 const transformRow = require( "./transformRow" );
 const RequestStream = require( "./RequestStream" );
 
@@ -38,11 +39,24 @@ async function _query( conn, sql, params ) {
 	} );
 }
 
+async function buildSql( sql, params ) {
+	let _sql = await sql;
+	if ( typeof( _sql ) === "function" ) {
+		const obj = {};
+		/* eslint-disable guard-for-in */
+		for ( const prop in params ) {
+			Object.assign( obj, { [ prop ]: params[ prop ].val } );
+		}
+		_sql = _sql( obj );
+	}
+	return _sql;
+}
+
 class Api {
 
 	async execute( sql, params ) {
 		const callStack = new Error().stack;
-		const _sql = await sql;
+		const _sql = await buildSql( sql, params );
 		return this.withConnection( conn => {
 			return new Promise( ( resolve, reject ) => {
 				const request = new Request( _sql, ( err, rowCount ) => {
@@ -59,7 +73,7 @@ class Api {
 
 	async executeBatch( sql ) {
 		const callStack = new Error().stack;
-		const _sql = await sql;
+		const _sql = await buildSql( sql, {} );
 		return this.withConnection( conn => {
 			return new Promise( ( resolve, reject ) => {
 				const request = new Request( _sql, ( err, rowCount ) => {
@@ -76,7 +90,7 @@ class Api {
 
 	async querySets( sql, params ) {
 		const callStack = new Error().stack;
-		const _sql = await sql;
+		const _sql = await buildSql( sql, params );
 		return this.withConnection( async conn => {
 			try {
 				const sets = await _query( conn, _sql, params );
@@ -89,7 +103,7 @@ class Api {
 
 	async query( sql, params ) {
 		const callStack = new Error().stack;
-		const _sql = await sql;
+		const _sql = await buildSql( sql, params );
 		return this.withConnection( async conn => {
 			let sets;
 			try {
@@ -106,7 +120,7 @@ class Api {
 
 	async queryFirst( sql, params ) {
 		const callStack = new Error().stack;
-		const _sql = await sql;
+		const _sql = await buildSql( sql, params );
 		return this.withConnection( async conn => {
 			let sets;
 			try {
@@ -128,7 +142,7 @@ class Api {
 	// TODO: Would we rather listen for the 'columnMetadata' event also and take better control of this?
 	async queryValue( sql, params ) {
 		const callStack = new Error().stack;
-		const _sql = await sql;
+		const _sql = await buildSql( sql, params );
 		return this.withConnection( async conn => {
 			let sets;
 			try {
@@ -155,7 +169,7 @@ class Api {
 	queryStream( sql, params ) {
 		const stream = new RequestStream( );
 		this.withConnection( async conn => {
-			const _sql = await sql;
+			const _sql = await buildSql( sql, params );
 			stream.request.sqlTextOrProcedure = _sql;
 
 			addRequestParams( stream.request, params );
@@ -218,6 +232,7 @@ Object.keys( ISOLATION_LEVEL ).forEach( k => {
 	Api.prototype[ k.toLowerCase() ] = ISOLATION_LEVEL[ k ];
 } );
 
-Api.prototype.fromFile = fileLoader;
+Api.prototype.fromFile = fileLoader( x => x );
+Api.prototype.fromTemplate = fileLoader( templateBuilder );
 
 module.exports = Api;
