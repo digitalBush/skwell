@@ -27,12 +27,18 @@ At this point, you have a client (`sql`) that is ready to be used non-transactio
 
 Now, let's make some noise.
 ``` js
-//mutation
+// execute, returns the number of rows affected
 const insertedCount = await sql.execute(
 	"INSERT INTO SuperCoolPeople (name) values(@name)",
 	{
 		name: { val: "josh", type: sql.nvarchar( 20 ) }
 	} );
+
+// executeBatch, returns the number of rows affected
+// use this when executing DDL statements that can't be run via sp_executesql
+await sql.executeBatch(
+	"CREATE TABLE lol (id int);"
+)
 
 // querySets, returns an array of object arrays
 const usersWithPageInfo = await sql.querySets( query, params );
@@ -40,14 +46,23 @@ const usersWithPageInfo = await sql.querySets( query, params );
 // query, returns an array of objects
 const users = await sql.query( query, params );
 
-// query, returns a stream
-const userStream = await sql.queryStream( query, params );
-
-// query first row, returns a single object
+// queryFirst, returns first row as a single object
 const user = await sql.queryFirst( query, params );
 
-// query first column from first row, returns a single value
+// queryValue, returns first value of first row
 const userId = await sql.queryValue( query, params );
+
+// queryStream, returns a stream of objects generated from the rows
+// use this when you don't want to bring the entire data set into memory at once.
+const userStream = await sql.queryStream( query, params );
+
+// bulkLoad, returns the number of rows inserted
+const insertedCount = await sql.bulkLoad( "SomeTable", {
+	schema: {
+		id: sql.int.nullable()
+	},
+	rows: [ { id: 1 }, { id: 2 }, { id: 3 } ]
+} );
 
 ```
 
@@ -97,20 +112,20 @@ Sometimes you need to execute multiple queries in a transaction. Don't worry, we
 
 ``` js
 
-const result = await sql.transaction( async () => {
+const result = await sql.transaction( async tx => {
 	const userId = 11;
 	const groupId = 89;
 
 	// any uses of `sql` within this transaction block will automatically happen on the transaction.
 
-	await sql.execute(
+	await tx.execute(
 		"INSERT INTO Users(id, name) values(@id, @name)",
 		{
 			id: { val: userId, type: sql.int },
 			name: { val: "josh", type: sql.nvarchar( 20 ) }
 		} );
 
-	await sql.execute(
+	await tx.execute(
 		"INSERT INTO Groups(id, userId) values(@id, @userId)",
 		{
 			id: { val: groupId, type: sql.int },

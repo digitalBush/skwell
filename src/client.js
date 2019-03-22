@@ -1,28 +1,25 @@
 const { ISOLATION_LEVEL } = require( "tedious" );
-const { createNamespace } = require( "cls-hooked" );
 
 const Api = require( "./api" );
+const Transaction = require( "./transaction" );
 
 const _pool = Symbol( "skwell:pool" );
-const _cls = Symbol( "skwell:cls" );
 
 class Client extends Api {
 
 	constructor( pool ) {
 		super();
 		this[ _pool ] = pool;
-		this[ _cls ] = createNamespace( "skwell" );
 	}
 
 	async withConnection( action ) {
 		let conn;
-		const ambientConn = this[ _cls ].get( "transaction" );
 		try {
-			conn = ambientConn || await this[ _pool ].acquire();
+			conn = await this[ _pool ].acquire();
 			const result = await action( conn );
 			return result;
 		} finally {
-			if ( conn && !ambientConn ) {
+			if ( conn ) {
 				await this[ _pool ].release( conn );
 			}
 		}
@@ -32,25 +29,7 @@ class Client extends Api {
 		if ( isolationLevel === undefined ) {
 			isolationLevel = ISOLATION_LEVEL.READ_COMMITTED;
 		}
-		return this[ _cls ].runAndReturn( () => this.withConnection( async conn => {
-			this[ _cls ].set( "transaction", conn );
-
-			try {
-				await conn.beginTransaction( "" /* name */, isolationLevel );
-				const result = await action();
-				await conn.commitTransaction();
-				return result;
-			} catch ( err ) {
-				// TODO: wrap err instead of mangling message
-				err.message = `Automatic Rollback. Failed Because: ${ err.message }`;
-				try {
-					await conn.rollbackTransaction();
-				} catch ( _ ) {
-					conn.close();
-				}
-				throw err;
-			}
-		} ) );
+		return this.withConnection( conn => Transaction.run( conn, isolationLevel, action ) );
 	}
 
 	async dispose() {
@@ -63,7 +42,7 @@ class Client extends Api {
 	// Override base API to keep from loading a temp table on different connection.
 	async bulkLoad( tableName, options ) {
 		const name = tableName.split( "." ).pop().replace( "[", "" );
-		if ( name.indexOf( "#" ) === 0 && !this[ _cls ].get( "transaction" ) ) {
+		if ( name.indexOf( "#" ) === 0 ) {
 			throw new Error( `Unable to load temp table '${ tableName }' using connection pool. Use a transaction instead.` );
 		}
 
