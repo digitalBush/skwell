@@ -152,11 +152,9 @@ describe( "Streaming - Integration", () => {
 			}
 		} );
 
-		await sql.transaction( async () => {
-			await sql.execute( "INSERT INTO MutationTests VALUES(1, 'should go away')" );
-
-			const readable = sql.queryStream( "SELECT 1 WHERE 1=0" );
-
+		await sql.transaction( async tx => {
+			await tx.execute( "INSERT INTO MutationTests VALUES(1, 'should go away')" );
+			const readable = tx.queryStream( "SELECT 1 WHERE 1=0" );
 			await pumpAsync( [ readable, brokenWriter ] );
 		} )
 			.should.eventually.be.rejectedWith( "Automatic Rollback. Failed Because: oops" );
