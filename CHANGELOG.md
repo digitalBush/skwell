@@ -1,3 +1,10 @@
+## 4.x
+
+### 4.0.0
+
+* Updated README to match current API.
+* BREAKING: Removed ambient transactions.
+
 ## 3.x
 
 ### 3.1.0
