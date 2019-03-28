@@ -2,13 +2,21 @@ const { ISOLATION_LEVEL } = require( "tedious" );
 
 const Api = require( "./api" );
 const Transaction = require( "./transaction" );
+const poolFactory = require( "./poolFactory" );
 
 const _pool = Symbol( "skwell:pool" );
 
 class Client extends Api {
 
-	constructor( pool ) {
+	constructor( config ) {
 		super();
+
+		const pool = poolFactory( this, config );
+
+		pool.on( "factoryCreateError", e => {
+			this.emit( "error", e );
+		} );
+
 		this[ _pool ] = pool;
 	}
 
