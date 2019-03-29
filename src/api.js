@@ -1,4 +1,5 @@
 const { Request, ISOLATION_LEVEL } = require( "tedious" );
+const EventEmitter = require( "events" );
 
 const { addRequestParams, addBulkLoadParam } = require( "./parameterBuilder" );
 const types = require( "./types" );
@@ -38,7 +39,7 @@ async function _query( conn, sql, params ) {
 	} );
 }
 
-class Api {
+class Api extends EventEmitter {
 
 	async execute( sql, params ) {
 		const callStack = new Error().stack;

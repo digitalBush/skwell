@@ -1,17 +1,64 @@
-const { sinon } = testHelpers;
-const Client = require( "src/client" );
+const { proxyquire, sinon } = testHelpers;
+const EventEmitter = require( "events" );
 
 describe( "client", () => {
-	describe( "when connection acquire succeeds", () => {
-		let pool, result, action;
-		const expectedConnection = "CONNECTION";
-		const expectedResult = "RESULT";
+	let pool, result, action, poolFactory, Client;
 
+	const expectedConnection = "CONNECTION";
+	const expectedResult = "RESULT";
+
+	function setup() {
+		pool = Object.assign( new EventEmitter(), {
+			acquire: sinon.stub().resolves( expectedConnection ),
+			release: sinon.stub().resolves()
+		} );
+
+		poolFactory = sinon.stub().returns( pool );
+
+		Client = proxyquire( "src/client", {
+			"./poolFactory": poolFactory
+		} );
+	}
+
+	describe( "when creating a client", () => {
+		let client, config;
+
+		before( () => {
+			setup();
+			config = {};
+			client = new Client( config );
+		} );
+
+		it( "should get a pool from the poolFactory", () => {
+			poolFactory.should.be.calledOnce()
+				.and.calledWithExactly( client, config );
+		} );
+	} );
+
+	describe( "when pool cannot create db connection", () => {
+		let client, fakeEmit;
+
+		const someError = new Error( "Doh!" );
+
+		before( () => {
+			setup();
+			fakeEmit = sinon.stub();
+			client = new Client( {} );
+
+			sinon.replace( client, "emit", fakeEmit );
+
+			pool.emit( "factoryCreateError", someError );
+		} );
+
+		it( "emits error on client", () => {
+			fakeEmit.should.be.calledOnce().and.calledWithExactly( "error", someError );
+		} );
+	} );
+
+	describe( "when connection acquire succeeds", () => {
 		before( async () => {
-			pool = {
-				acquire: sinon.stub().resolves( expectedConnection ),
-				release: sinon.stub().resolves()
-			};
+			setup();
+
 			action = sinon.stub().resolves( expectedResult );
 			const client = new Client( pool );
 			result = await client.withConnection( action );
@@ -35,14 +82,15 @@ describe( "client", () => {
 	} );
 
 	describe( "when connection acquire fails", () => {
-		let pool, error, action;
+		let error;
 		const expectedError = new Error( "Boom" );
 
 		before( async () => {
-			pool = {
-				acquire: sinon.stub().rejects( expectedError ),
-				release: sinon.stub().resolves()
-			};
+			setup();
+
+			pool.acquire = sinon.stub().rejects( expectedError );
+			pool.release.reset(); // reset call counts for pool.release
+
 			action = sinon.stub().resolves();
 			const client = new Client( pool );
 			try {

@@ -10,7 +10,7 @@ First we need to create a client.
 
 ``` js
 const skwell = require("skwell");
-const sql = await skwell.connect( {
+const sql = skwell.connect( {
 	username: "ima_user",
 	password: "sekret",
 	server: "localhost",
@@ -23,7 +23,14 @@ const sql = await skwell.connect( {
 
 ```
 
-At this point, you have a client (`sql`) that is ready to be used non-transactionally. A pool of connections is maintained in the background and one will be chosen for you to execute your queries.
+
+At this point, you have a client (`sql`) that is ready to be used non-transactionally. A pool of connections is maintained in the background and one will be chosen for you to execute your queries.  Errors will be emitted on this client and can be handled accordingly.
+
+```js
+sql.on( "error", err => {
+	// handle the error things
+} )
+```
 
 Now, let's make some noise.
 ``` js
