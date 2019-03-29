@@ -1,3 +1,10 @@
+## 5.x
+
+### 5.0.0
+
+* Fixed/Added tests for new behavior
+* Changed client to emit tedious errors
+
 ## 4.x
 
 ### 4.0.0
