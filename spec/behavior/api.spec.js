@@ -1,6 +1,29 @@
 const { sinon, proxyquire } = testHelpers;
 
 describe( "api", () => {
+	describe( "when using query stream", () => {
+		describe( "when withConnection encounters an error", () => {
+			let api, requestStream;
+			beforeEach( async () => {
+				requestStream = {
+					destroy: sinon.stub()
+				};
+				const RequestStream = sinon.stub().returns( requestStream );
+				const Api = proxyquire( "src/api", { "./RequestStream": RequestStream } );
+				api = new Api();
+				api.withConnection = sinon.stub().returns( {
+					catch: sinon.stub().callsArgWith( 0, "ERR" )
+				} );
+				api.queryStream();
+			} );
+
+			it( "should call destroy on the stream", () => {
+				requestStream.destroy.should.be.calledOnce
+					.and.calledWith( "ERR" );
+			} );
+		} );
+	} );
+
 	describe( "when bulk loading", () => {
 		let api, conn, bulk;
 

@@ -57,6 +57,61 @@ describe( "poolFactory", () => {
 		} );
 	} );
 
+	describe( "when validating the connection", () => {
+		let resourceFactory;
+
+		before( async () => {
+			setup();
+
+			// use the poolFactory to generate a pool (stub 'pool' is returned from genericPool.createPool)
+			poolFactory( client, {} );
+
+			// get the original resourceFactory so that we can setup the on error handler
+			resourceFactory = genericPool.createPool.getCall( 0 ).args[ 0 ];
+		} );
+
+		describe( "when the state name is Logged In", () => {
+			describe( "when resetting the connection fails", () => {
+				it( "should resolve to false", async () => {
+					const result = await resourceFactory.validate( {
+						state: { name: "LoggedIn" },
+						reset: sinon.stub().rejects()
+					} );
+					result.should.be.false();
+				} );
+			} );
+
+			describe( "when resetting the connection succeeds", () => {
+				it( "should resolve to true", async () => {
+					const result = await resourceFactory.validate( {
+						state: { name: "LoggedIn" },
+						reset: sinon.stub().resolves()
+					} );
+					result.should.be.true();
+				} );
+			} );
+		} );
+
+		describe( "when the state name is something else", () => {
+			it( "should close the connection", async () => {
+				const close = sinon.stub().resolves();
+				await resourceFactory.validate( { state: {}, close } );
+				close.should.be.calledOnce();
+			} );
+
+			it( "should resolve to false", async () => {
+				const close = sinon.stub().resolves();
+				const result = await resourceFactory.validate( { state: {}, close } );
+				result.should.be.false();
+			} );
+
+			it( "should not break if the connection close fails", async () => {
+				const close = sinon.stub().rejects();
+				const result = await resourceFactory.validate( { state: {}, close } );
+				result.should.be.false();
+			} );
+		} );
+	} );
 
 	describe( "when connection resource emits an error", () => {
 		let fakeEmit;
