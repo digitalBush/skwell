@@ -46,7 +46,9 @@ class RequestStream extends Readable {
 	}
 
 	_destroy( err, cb ) {
-		this[ _request ].connection.cancel();
+		if ( this[ _request ].connection ) {
+			this[ _request ].connection.cancel();
+		}
 		cb( err );
 	}
 

@@ -10,11 +10,16 @@ function getResourceFactory( client, config ) {
 			conn.on( "error", e => client.emit( "error", e ) );
 			return conn;
 		},
-		validate( conn ) {
+		async validate( conn ) {
 			if ( conn.state.name === "LoggedIn" ) {
-				return conn.reset();
+				try {
+					await conn.reset();
+					return true;
+				} catch ( e ) {
+					return false;
+				}
 			}
-			conn.close();
+			conn.close().catch( () => {} ); // Move on without waiting.
 			return false;
 		},
 		destroy( conn ) {

@@ -163,9 +163,11 @@ class Api extends EventEmitter {
 
 			await new Promise( resolve => {
 				stream.on( "end", resolve );
-				stream.on( "error", resolve ); // Resolving here because there's no returned promise to catch these errors.
+				stream.on( "error", resolve ); // An error emitted here has already called stream destroy
 				conn.execSql( stream.request );
 			} );
+		} ).catch( err => {
+			stream.destroy( err );
 		} );
 		return stream;
 	}
