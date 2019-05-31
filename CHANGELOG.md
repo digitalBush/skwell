@@ -1,5 +1,10 @@
 ## 5.x
 
+### 5.0.1
+
+* Added tests to support fixes for unhandled rejections
+* Resolved potential unhandled rejection errors on both connection and request timeouts
+
 ### 5.0.0
 
 * Fixed/Added tests for new behavior
