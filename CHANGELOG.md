@@ -1,5 +1,10 @@
 ## 5.x
 
+### 5.1.0
+
+* Updated dev deps
+* Update tedious to 5.0.3
+
 ### 5.0.1
 
 * Added tests to support fixes for unhandled rejections
