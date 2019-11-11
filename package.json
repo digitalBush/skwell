@@ -17,7 +17,7 @@
     "callsites": "^3.0.0",
     "generic-pool": "^3.7.1",
     "readable-stream": "^3.0.6",
-    "tedious": "^3.0.1"
+    "tedious": "^5.0.3"
   },
   "devDependencies": {
     "app-module-path": "^2.2.0",
