@@ -1,6 +1,8 @@
 const DEFAULT_CONNECT_TIMEOUT = 15000;
 const DEFAULT_REQUEST_TIMEOUT = 15000;
 const DEFAULT_PORT = 1433;
+const DEFAULT_AUTHENTICATION_TYPE = "default";
+const NTLM_AUTHENTICATION_TYPE = "ntlm";
 
 function connectionPool( config ) {
 	const { pool = {}, connectTimeout = DEFAULT_CONNECT_TIMEOUT } = config;
@@ -22,11 +24,18 @@ function tedious( config ) {
 		requestTimeout = DEFAULT_REQUEST_TIMEOUT,
 		encrypt = false,
 		abortTransactionOnError = true } = config;
+	const authenticationType = config.authenticationType ||
+		( domain ? NTLM_AUTHENTICATION_TYPE : DEFAULT_AUTHENTICATION_TYPE );
 	return {
-		userName: username,
-		password,
+		authentication: {
+			type: authenticationType,
+			options: {
+				userName: username,
+				password,
+				domain
+			}
+		},
 		server,
-		domain,
 		options: {
 			port,
 			database,
