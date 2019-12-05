@@ -25,6 +25,12 @@ const sql = skwell.connect( {
 	connectTimeout: 15000, //ms
 	requestTimeout: 15000, //ms
 	encrypt: false,
+	onBeginTransaction( tx ){
+		// Executes at the beginning of transaction
+	},
+	onEndTransaction( tx ){
+		// Executes at the end of transaction, right before commit
+	},
 } );
 
 ```
@@ -39,7 +45,6 @@ sql.on( "error", err => {
 	// handle the error things
 } )
 ```
-
 The signature of everything except `bulkLoad` takes a query as the first argument. This query can be a string or a promise that resolves to a string. Skwell provides a `sql.file( "./relative.file.sql" )` method to load a file and cache the resulting text. If you are calling a stored procedure, use `sql.sproc( "name of stored procedure" )`.
 
 Now, let's make some noise.
@@ -129,11 +134,15 @@ Sometimes you need to execute multiple queries in a transaction. Don't worry, we
 
 ``` js
 
-const result = await sql.transaction( async tx => {
-	const userId = 11;
-	const groupId = 89;
+// Passed as 2nd argument to `.transaction` below
+const opts = {
+	isolationLevel: sql.read_uncommitted,
+	context: { userId: 123 } // This is set on the transaction
+};
 
-	// any uses of `sql` within this transaction block will automatically happen on the transaction.
+const result = await sql.transaction( async tx => {
+	const { userId } = tx.context; // context from opt.context above
+	const groupId = 89;
 
 	await tx.execute(
 		"INSERT INTO Users(id, name) values(@id, @name)",
@@ -148,7 +157,7 @@ const result = await sql.transaction( async tx => {
 			id: { val: groupId, type: sql.int },
 			userId: { val: userId, type: sql.int }
 		} );
-}, sql.read_uncommitted );
+}, opts );
 
 // At this point, the transaction will be committed for you.
 // If something would have broken, the transaction would have been rolled back.
