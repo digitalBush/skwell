@@ -34,10 +34,16 @@ describe( "Transaction - Integration", () => {
 			} ).should.eventually.equal( "ReadCommitted" );
 		} );
 
-		it( "should set isolation level", async () => {
+		it( "should set isolation level as 2nd arg", async () => {
 			await sql.transaction( async tx => {
 				return tx.queryValue( isolationLevelQuery );
 			}, sql.read_uncommitted ).should.eventually.equal( "ReadUncommitted" );
+		} );
+
+		it( "should set isolation level as prop of 2nd arg", async () => {
+			await sql.transaction( async tx => {
+				return tx.queryValue( isolationLevelQuery );
+			}, { isolationLevel: sql.read_uncommitted } ).should.eventually.equal( "ReadUncommitted" );
 		} );
 	} );
 
