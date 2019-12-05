@@ -30,15 +30,15 @@ class Client extends Api {
 	}
 
 	async withConnection( action ) {
-		let conn;
+		let connection;
 		const { pool } = this[ _state ];
 		try {
-			conn = await pool.acquire();
-			const result = await action( conn );
+			connection = await pool.acquire();
+			const result = await action( connection );
 			return result;
 		} finally {
-			if ( conn ) {
-				await pool.release( conn );
+			if ( connection ) {
+				await pool.release( connection );
 			}
 		}
 	}
@@ -56,7 +56,7 @@ class Client extends Api {
 		}
 		const { onBeginTransaction, onEndTransaction } = this[ _state ];
 
-		return this.withConnection( conn => Transaction.run( { conn, isolationLevel, action, context, onBeginTransaction, onEndTransaction } ) );
+		return this.withConnection( connection => Transaction.run( { connection, isolationLevel, action, context, onBeginTransaction, onEndTransaction } ) );
 	}
 
 	async dispose() {

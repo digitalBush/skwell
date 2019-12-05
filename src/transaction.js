@@ -10,22 +10,22 @@ class Transaction extends Api {
 		this.context = context;
 	}
 
-	static async run( { conn, isolationLevel, action, context, onBeginTransaction, onEndTransaction } ) {
-		const tx = new Transaction( conn, context );
+	static async run( { connection, isolationLevel, action, context, onBeginTransaction, onEndTransaction } ) {
+		const tx = new Transaction( connection, context );
 		try {
-			await conn.beginTransaction( "" /* name */, isolationLevel );
+			await connection.beginTransaction( "" /* name */, isolationLevel );
 			await onBeginTransaction( tx );
 			const result = await action( tx );
 			await onEndTransaction( tx );
-			await conn.commitTransaction();
+			await connection.commitTransaction();
 			return result;
 		} catch ( err ) {
 			// TODO: wrap err instead of mangling message
 			err.message = `Automatic Rollback. Failed Because: ${ err.message }`;
 			try {
-				await conn.rollbackTransaction();
+				await connection.rollbackTransaction();
 			} catch ( _ ) {
-				conn.close();
+				connection.close();
 			}
 			throw err;
 		}
