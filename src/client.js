@@ -4,7 +4,7 @@ const Api = require( "./api" );
 const Transaction = require( "./transaction" );
 const poolFactory = require( "./poolFactory" );
 
-const _pool = Symbol( "skwell:pool" );
+const _state = Symbol( "skwell:client-state" );
 
 class Client extends Api {
 
@@ -17,31 +17,50 @@ class Client extends Api {
 			this.emit( "error", e );
 		} );
 
-		this[ _pool ] = pool;
+		const {
+			onBeginTransaction = () => {},
+			onEndTransaction = () => {}
+		} = config;
+
+		this[ _state ] = {
+			pool,
+			onBeginTransaction,
+			onEndTransaction
+		};
 	}
 
 	async withConnection( action ) {
 		let conn;
+		const { pool } = this[ _state ];
 		try {
-			conn = await this[ _pool ].acquire();
+			conn = await pool.acquire();
 			const result = await action( conn );
 			return result;
 		} finally {
 			if ( conn ) {
-				await this[ _pool ].release( conn );
+				await pool.release( conn );
 			}
 		}
 	}
 
-	transaction( action, isolationLevel ) {
+	transaction( action, opts ) {
+		let isolationLevel, context;
+		if ( typeof opts === "object" ) {
+			( { isolationLevel, context } = opts );
+		} else if ( opts ) {
+			isolationLevel = opts;
+		}
+
 		if ( isolationLevel === undefined ) {
 			isolationLevel = ISOLATION_LEVEL.READ_COMMITTED;
 		}
-		return this.withConnection( conn => Transaction.run( conn, isolationLevel, action ) );
+		const { onBeginTransaction, onEndTransaction } = this[ _state ];
+
+		return this.withConnection( conn => Transaction.run( { conn, isolationLevel, action, context, onBeginTransaction, onEndTransaction } ) );
 	}
 
 	async dispose() {
-		const pool = this[ _pool ];
+		const { pool } = this[ _state ];
 		await pool.drain().then( () => {
 			pool.clear();
 		} );

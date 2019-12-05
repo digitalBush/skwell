@@ -4,25 +4,28 @@ const _state = Symbol( "skwell:tx-state" );
 
 class Transaction extends Api {
 
-	constructor( connection ) {
+	constructor( connection, context ) {
 		super();
 		this[ _state ] = { connection };
+		this.context = context;
 	}
 
-	static async run( connection, isolationLevel, action ) {
-		const tx = new Transaction( connection );
+	static async run( { conn, isolationLevel, action, context, onBeginTransaction, onEndTransaction } ) {
+		const tx = new Transaction( conn, context );
 		try {
-			await connection.beginTransaction( "" /* name */, isolationLevel );
+			await conn.beginTransaction( "" /* name */, isolationLevel );
+			await onBeginTransaction( tx );
 			const result = await action( tx );
-			await connection.commitTransaction();
+			await onEndTransaction( tx );
+			await conn.commitTransaction();
 			return result;
 		} catch ( err ) {
 			// TODO: wrap err instead of mangling message
 			err.message = `Automatic Rollback. Failed Because: ${ err.message }`;
 			try {
-				await connection.rollbackTransaction();
+				await conn.rollbackTransaction();
 			} catch ( _ ) {
-				connection.close();
+				conn.close();
 			}
 			throw err;
 		}
