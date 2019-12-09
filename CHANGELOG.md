@@ -1,5 +1,10 @@
 ## 5.x
 
+### 5.2.0
+
+* Updated tedious config mapping to use new non-deprecated format
+* Bump lodash from 4.17.11 to 4.17.15
+
 ### 5.1.0
 
 * Updated dev deps
