@@ -1,7 +1,7 @@
 module.exports = {
 	extends: [ "leankit", "leankit/es6" ],
 	parserOptions: {
-		ecmaVersion: 2017,
+		ecmaVersion: 2018,
 		sourceType: 'module'
 	},
 	rules: {
