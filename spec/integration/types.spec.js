@@ -39,7 +39,7 @@ describe( "Types - Integration", () => {
 			datetime2: { val: datetime2, type: sql.datetime2( 7 ) },
 			nvarchar3: { val: "!".repeat( 3 ), type: sql.nvarchar( 3 ) },
 			nvarchar: { val: "!".repeat( 4000 ), type: sql.nvarchar },
-			nvarcharmax: { val: "!".repeat( 4000 ), type: sql.nvarchar( sql.max ) }
+			nvarcharmax: { val: "!".repeat( 4001 ), type: sql.nvarchar( sql.max ) }
 		} ).should.eventually.deep.equal( {
 			bit: true,
 			int: 1,
@@ -49,7 +49,55 @@ describe( "Types - Integration", () => {
 			datetime2,
 			nvarchar3: "!!!",
 			nvarchar: "!".repeat( 4000 ),
-			nvarcharmax: "!".repeat( 4000 )
+			nvarcharmax: "!".repeat( 4001 )
+		} );
+	} );
+
+	it( "it should round trip table types", () => {
+		const datetime = new Date();
+		datetime.setMilliseconds( 0 ); // compensating for sql datetime precision differences
+
+		const datetime2 = new Date();
+
+		const query = `
+		SELECT top 1 * from @jsonStuff;
+		`;
+
+		return sql.queryFirst( query, {
+			jsonStuff: {
+				type: {
+					bit: sql.bit,
+					int: sql.int,
+					bigint: sql.bigint,
+					decimal32: sql.decimal( 3, 2 ),
+					datetime: sql.datetime,
+					datetime2: sql.datetime2( 7 ),
+					nvarchar3: sql.nvarchar( 3 ),
+					nvarchar: sql.nvarchar,
+					nvarcharmax: sql.nvarchar( sql.max )
+				},
+				val: [ {
+					bit: true,
+					int: 1,
+					bigint: "1",
+					decimal32: 1.234,
+					datetime,
+					datetime2,
+					nvarchar3: "!".repeat( 3 ),
+					nvarchar: "!".repeat( 4000 ),
+					nvarcharmax: "!".repeat( 4001 )
+				} ]
+			}
+		} ).should.eventually.deep.equal( {
+			bit: true,
+			int: 1,
+			bigint: "1",
+			decimal32: 1.23,
+			datetime,
+			datetime2,
+			nvarchar3: "!!!",
+			nvarchar: "!".repeat( 4000 ),
+			nvarcharmax: "!".repeat( 4001 )
 		} );
 	} );
 } );

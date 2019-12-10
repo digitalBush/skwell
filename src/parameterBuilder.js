@@ -8,10 +8,9 @@ function typeDeclarations( definition ) {
 		if ( typeof column === "function" ) {
 			column = column();
 		}
-		const declaration = column.type.declaration( column );
 		return {
 			name,
-			declaration
+			declaration: column.declaration
 		};
 	} );
 }
