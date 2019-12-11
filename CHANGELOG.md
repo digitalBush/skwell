@@ -1,5 +1,9 @@
 ## 5.x
 
+### 5.3.0
+
+* Instead of scanning types from tedious, list them explicitly. We needed to get better type declarations for json schema when doing table based parameters.
+
 ### 5.2.0
 
 * Updated tedious config mapping to use new non-deprecated format
