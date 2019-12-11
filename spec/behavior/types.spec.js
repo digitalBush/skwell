@@ -17,6 +17,7 @@ describe( "types", () => {
 		"smallint",
 		"smallmoney",
 		"text",
+		"tinyint",
 		"tvp",
 		"udt",
 		"uniqueidentifier",
