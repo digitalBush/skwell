@@ -14,11 +14,11 @@ function buildError( error, callStack ) {
 	return error;
 }
 
-async function _query( conn, sql, params ) {
+async function runQuery( conn, { text, methodName }, params ) {
 	const sets = [];
 	let rows;
 	return new Promise( ( resolve, reject ) => {
-		const request = new Request( sql, err => {
+		const request = new Request( text, err => {
 			if ( err ) {
 				return reject( err );
 			}
@@ -35,35 +35,51 @@ async function _query( conn, sql, params ) {
 			rows = [];
 		} );
 		request.on( "row", obj => rows.push( transformRow( obj ) ) );
-		conn.execSql( request );
+		conn[ methodName ]( request );
 	} );
+}
+
+async function prepare( cmd ) {
+	const result = await cmd;
+	if ( result.procedure ) {
+		return {
+			text: result.procedure,
+			methodName: "callProcedure"
+		};
+	}
+
+	return {
+		text: result,
+		methodName: "execSql"
+	};
 }
 
 class Api extends EventEmitter {
 
-	async execute( sql, params ) {
+	async execute( cmd, params ) {
 		const callStack = new Error().stack;
-		const _sql = await sql;
+		const { text, methodName } = await prepare( cmd );
+
 		return this.withConnection( conn => {
 			return new Promise( ( resolve, reject ) => {
-				const request = new Request( _sql, ( err, rowCount ) => {
+				const request = new Request( text, ( err, rowCount ) => {
 					if ( err ) {
 						return reject( buildError( err, callStack ) );
 					}
 					return resolve( rowCount );
 				} );
 				addRequestParams( request, params );
-				conn.execSql( request );
+				conn[ methodName ]( request );
 			} );
 		} );
 	}
 
-	async executeBatch( sql ) {
+	async executeBatch( statement ) {
 		const callStack = new Error().stack;
-		const _sql = await sql;
+		const text = await statement;
 		return this.withConnection( conn => {
 			return new Promise( ( resolve, reject ) => {
-				const request = new Request( _sql, ( err, rowCount ) => {
+				const request = new Request( text, ( err, rowCount ) => {
 					if ( err ) {
 						return reject( buildError( err, callStack ) );
 					}
@@ -75,12 +91,12 @@ class Api extends EventEmitter {
 		} );
 	}
 
-	async querySets( sql, params ) {
+	async querySets( cmd, params ) {
 		const callStack = new Error().stack;
-		const _sql = await sql;
+		const preparedCmd = await prepare( cmd );
 		return this.withConnection( async conn => {
 			try {
-				const sets = await _query( conn, _sql, params );
+				const sets = await runQuery( conn, preparedCmd, params );
 				return sets;
 			} catch ( error ) {
 				throw buildError( error, callStack );
@@ -88,13 +104,13 @@ class Api extends EventEmitter {
 		} );
 	}
 
-	async query( sql, params ) {
+	async query( cmd, params ) {
 		const callStack = new Error().stack;
-		const _sql = await sql;
+		const preparedCmd = await prepare( cmd );
 		return this.withConnection( async conn => {
 			let sets;
 			try {
-				sets = await _query( conn, _sql, params );
+				sets = await runQuery( conn, preparedCmd, params );
 				if ( sets && sets.length > 1 ) {
 					throw new Error( "Query returns more than one set of data. Use querySets method to return multiple sets of data." );
 				}
@@ -105,13 +121,13 @@ class Api extends EventEmitter {
 		} );
 	}
 
-	async queryFirst( sql, params ) {
+	async queryFirst( cmd, params ) {
 		const callStack = new Error().stack;
-		const _sql = await sql;
+		const preparedCmd = await prepare( cmd );
 		return this.withConnection( async conn => {
 			let sets;
 			try {
-				sets = await _query( conn, _sql, params );
+				sets = await runQuery( conn, preparedCmd, params );
 
 				if ( sets && sets.length > 1 ) {
 					throw new Error( "Query returns more than one set of data. Use querySets method to return multiple sets of data." );
@@ -127,13 +143,13 @@ class Api extends EventEmitter {
 
 	// This implementation is weird because we're getting objects from our internal query
 	// TODO: Would we rather listen for the 'columnMetadata' event also and take better control of this?
-	async queryValue( sql, params ) {
+	async queryValue( cmd, params ) {
 		const callStack = new Error().stack;
-		const _sql = await sql;
+		const preparedCmd = await prepare( cmd );
 		return this.withConnection( async conn => {
 			let sets;
 			try {
-				sets = await _query( conn, _sql, params );
+				sets = await runQuery( conn, preparedCmd, params );
 
 				if ( sets && sets.length > 1 ) {
 					throw new Error( "Query returns more than one set of data. Use querySets method to return multiple sets of data." );
@@ -153,18 +169,18 @@ class Api extends EventEmitter {
 		} );
 	}
 
-	queryStream( sql, params ) {
+	queryStream( cmd, params ) {
 		const stream = new RequestStream( );
 		this.withConnection( async conn => {
-			const _sql = await sql;
-			stream.request.sqlTextOrProcedure = _sql;
+			const { text, methodName } = await prepare( cmd );
+			stream.request.sqlTextOrProcedure = text;
 
 			addRequestParams( stream.request, params );
 
 			await new Promise( resolve => {
 				stream.on( "end", resolve );
 				stream.on( "error", resolve ); // An error emitted here has already called stream destroy
-				conn.execSql( stream.request );
+				conn[ methodName ]( stream.request );
 			} );
 		} ).catch( err => {
 			stream.destroy( err );
@@ -221,6 +237,8 @@ Object.keys( ISOLATION_LEVEL ).forEach( k => {
 	Api.prototype[ k.toLowerCase() ] = ISOLATION_LEVEL[ k ];
 } );
 
-Api.prototype.fromFile = fileLoader;
+Api.prototype.fromFile = fileLoader; // leaving this here for backwards compat.
+Api.prototype.file = fileLoader;
+Api.prototype.sproc = procedure => ( { procedure } );
 
 module.exports = Api;

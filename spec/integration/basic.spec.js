@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 const { config } = testHelpers;
 
 const skwell = require( "src" );
@@ -5,7 +6,7 @@ describe( "Basic - Integration", () => {
 	let sql;
 	before( async () => {
 		sql = await skwell.connect( config );
-		await sql.execute( sql.fromFile( "sql/basic-setup" ) );
+		await sql.execute( sql.file( "sql/basic-setup" ) );
 	} );
 
 	after( () => {
@@ -43,6 +44,16 @@ describe( "Basic - Integration", () => {
 			return sql.execute( query )
 				.should.eventually.be.rejectedWith( "Invalid object name 'lol'." )
 				.and.have.property( "stack" ).with.string( "basic.spec.js" );
+		} );
+
+		it( "should work with sprocs", () => {
+			return sql.execute( sql.sproc( "sp_server_info" ), {
+				attribute_id: {
+					type: sql.int,
+					val: 1
+				}
+			} )
+				.should.eventually.equal( 1 );
 		} );
 	} );
 
@@ -242,6 +253,20 @@ describe( "Basic - Integration", () => {
 				.should.eventually.be.rejectedWith( "Query returns more than one set of data. Use querySets method to return multiple sets of data." )
 				.and.have.property( "stack" ).with.string( "basic.spec.js" );
 		} );
+
+		it( "should work with sprocs", () => {
+			return sql.query( sql.sproc( "sp_server_info" ), {
+				attribute_id: {
+					type: sql.int,
+					val: 1
+				}
+			} )
+				.should.eventually.deep.equal( [ {
+					attribute_id: 1,
+					attribute_name: "DBMS_NAME",
+					attribute_value: "Microsoft SQL Server"
+				} ] );
+		} );
 	} );
 
 	describe( "queryFirst", () => {
@@ -314,6 +339,19 @@ describe( "Basic - Integration", () => {
 			return sql.queryFirst( query )
 				.should.eventually.be.rejectedWith( "Query returns more than one set of data. Use querySets method to return multiple sets of data." )
 				.and.have.property( "stack" ).with.string( "basic.spec.js" );
+		} );
+		it( "should work with sprocs", () => {
+			return sql.queryFirst( sql.sproc( "sp_server_info" ), {
+				attribute_id: {
+					type: sql.int,
+					val: 1
+				}
+			} )
+				.should.eventually.deep.equal( {
+					attribute_id: 1,
+					attribute_name: "DBMS_NAME",
+					attribute_value: "Microsoft SQL Server"
+				} );
 		} );
 	} );
 
@@ -393,6 +431,16 @@ describe( "Basic - Integration", () => {
 			return sql.queryValue( query )
 				.should.eventually.be.rejectedWith( "Query returns more than one set of data. Use querySets method to return multiple sets of data." )
 				.and.have.property( "stack" ).with.string( "basic.spec.js" );
+		} );
+
+		it( "should work with sprocs", () => {
+			return sql.queryValue( sql.sproc( "sp_server_info" ), {
+				attribute_id: {
+					type: sql.int,
+					val: 1
+				}
+			} )
+				.should.eventually.deep.equal( 1 );
 		} );
 	} );
 } );

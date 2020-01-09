@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 const { config } = testHelpers;
 
 const { promisify } = require( "util" );
@@ -73,6 +74,36 @@ describe( "Streaming - Integration", () => {
 					},
 					{ row: { id: 3, test: "C" } },
 					{ row: { id: 2, test: "B" } }
+				] );
+				done();
+			} );
+	} );
+
+	it( "should work with sprocs", done => {
+		const stream = sql.queryStream( sql.sproc( "sp_server_info" ), {
+			attribute_id: {
+				type: sql.int,
+				val: 1
+			}
+		} );
+
+		const rows = [];
+		stream
+			.on( "data", data => {
+				rows.push( data );
+			} )
+			.on( "end", () => {
+				rows.should.deep.equal( [
+					{
+						metadata: {
+							columnNames: [ "attribute_id", "attribute_name", "attribute_value" ]
+						}
+					},
+					{ row: {
+						attribute_id: 1,
+						attribute_name: "DBMS_NAME",
+						attribute_value: "Microsoft SQL Server"
+					} }
 				] );
 				done();
 			} );

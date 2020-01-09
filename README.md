@@ -15,22 +15,32 @@ const sql = skwell.connect( {
 	password: "sekret",
 	server: "localhost",
 	database: "test",
+	domain: "lol.com", // Used for NTLM auth, omit if using standard auth
+	// Everything below is optional, values listed are defaults
+	port: 1433,
 	pool: {
 		min: 1,
 		max: 10
-	}
+	},
+	connectTimeout: 15000, //ms
+	requestTimeout: 15000, //ms
+	encrypt: false,
 } );
 
 ```
 
 
-At this point, you have a client (`sql`) that is ready to be used non-transactionally. A pool of connections is maintained in the background and one will be chosen for you to execute your queries.  Errors will be emitted on this client and can be handled accordingly.
+At this point, you have a client (`sql`) that is ready to be used non-transactionally. A pool of connections is maintained in the background and one will be chosen for you to execute your queries. Queries will resolve with the values or be rejected with an error.
+
+Server errors(like when the server goes away) will be emitted on this client and can be handled accordingly.
 
 ```js
 sql.on( "error", err => {
 	// handle the error things
 } )
 ```
+
+The signature of everything except `bulkLoad` takes a query as the first argument. This query can be a string or a promise that resolves to a string. Skwell provides a `sql.file( "./relative.file.sql" )` method to load a file and cache the resulting text. If you are calling a stored procedure, use `sql.sproc( "name of stored procedure" )`.
 
 Now, let's make some noise.
 ``` js
