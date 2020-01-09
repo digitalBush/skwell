@@ -1,5 +1,9 @@
 ## 5.x
 
+### 5.4.0
+
+* Added support for sprocs
+
 ### 5.3.1
 
 * Added missing tinyint type.
