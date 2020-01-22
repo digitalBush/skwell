@@ -1,5 +1,9 @@
 ## 5.x
 
+### 5.5.0
+
+* Added transaction hooks.
+
 ### 5.4.0
 
 * Added support for sprocs
