@@ -4,16 +4,19 @@ const _state = Symbol( "skwell:tx-state" );
 
 class Transaction extends Api {
 
-	constructor( connection ) {
+	constructor( connection, context ) {
 		super();
 		this[ _state ] = { connection };
+		this.context = context;
 	}
 
-	static async run( connection, isolationLevel, action ) {
-		const tx = new Transaction( connection );
+	static async run( { connection, isolationLevel, action, context, onBeginTransaction, onEndTransaction } ) {
+		const tx = new Transaction( connection, context );
 		try {
 			await connection.beginTransaction( "" /* name */, isolationLevel );
+			await onBeginTransaction( tx );
 			const result = await action( tx );
+			await onEndTransaction( tx );
 			await connection.commitTransaction();
 			return result;
 		} catch ( err ) {
