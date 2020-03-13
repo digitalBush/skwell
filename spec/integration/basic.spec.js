@@ -13,6 +13,15 @@ describe( "Basic - Integration", () => {
 		return sql.dispose();
 	} );
 
+	describe( "types", () => {
+		const { types } = skwell;
+		Object.keys( types ).forEach( name => {
+			it( `should have same ${ name } type for module and client`, () => {
+				types[ name ].should.equal( sql[ name ] );
+			} );
+		} );
+	} );
+
 	describe( "execute", () => {
 		it( "should work without params", () => {
 			const query = `
