@@ -1,5 +1,9 @@
 ## 5.x
 
+### 5.6.0
+
+* Exposing types at the module entry point so we can avoid having to have a client instance to reference types.
+
 ### 5.5.0
 
 * Added transaction hooks.
