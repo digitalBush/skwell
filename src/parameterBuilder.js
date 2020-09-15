@@ -1,6 +1,7 @@
 const types = require( "./types" );
 
 const TypeWrapper = require( "./TypeWrapper" );
+const TvpType = require( "./TvpType" );
 
 function typeDeclarations( definition ) {
 	return Object.keys( definition ).map( name => {
@@ -59,6 +60,10 @@ function addTableParam( request, key, param ) {
 	request.addParameter( name, type.type, val );
 }
 
+function addTvpParam( request, key, param ) {
+	const val = param.type.getVal( param.val );
+	request.addParameter( key, param.type.type, val );
+}
 module.exports = {
 	addRequestParams( request, params ) {
 		if ( !params ) {
@@ -70,7 +75,9 @@ module.exports = {
 				param.type = param.type();
 			}
 
-			if ( !Array.isArray( param.val ) ) {
+			if ( param.type instanceof TvpType ) {
+				addTvpParam( request, key, param );
+			} else if ( !Array.isArray( param.val ) ) {
 				const { val, type: { type, length, precision, scale } } = param;
 				request.addParameter( key, type, val, { length, precision, scale } );
 			} else if ( param.type instanceof TypeWrapper ) {
