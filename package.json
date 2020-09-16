@@ -3,6 +3,10 @@
   "version": "5.6.0",
   "description": "SQL Server Client pooled and promised",
   "main": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/digitalBush/skwell.git"
+  },
   "scripts": {
     "test": "nyc -r text-summary mocha -r spec/init -R spec 'spec/**/*.spec.js'",
     "test:watch": "nodemon --exec \"mocha -r spec/init -R spec 'spec/**/*.spec.js' || true\" -e js,json,sql",
@@ -16,8 +20,8 @@
   "dependencies": {
     "callsites": "^3.1.0",
     "generic-pool": "^3.7.1",
-    "readable-stream": "^3.0.6",
-    "tedious": "^5.0.3"
+    "readable-stream": "^3.6.0",
+    "tedious": "^9.2.1"
   },
   "devDependencies": {
     "app-module-path": "^2.2.0",

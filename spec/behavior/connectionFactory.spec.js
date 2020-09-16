@@ -26,7 +26,7 @@ describe( "connectionFactory", () => {
 			} );
 
 			tedious = {
-				Connection: sinon.stub().returns( expectedConnection )
+				connect: sinon.stub().returns( expectedConnection )
 			};
 			const factory = proxyquire( "src/connectionFactory", {
 				tedious,
@@ -39,8 +39,7 @@ describe( "connectionFactory", () => {
 		} );
 
 		it( "should create tedious connection", () => {
-			tedious.Connection.should.be.calledOnce()
-				.and.calledWithNew()
+			tedious.connect.should.be.calledOnce()
 				.and.calledWithExactly( expectedConfig );
 		} );
 

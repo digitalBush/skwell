@@ -55,6 +55,25 @@ describe( "Types - Integration", () => {
 		} );
 	} );
 
+	it( "should persist dates in UTC", () => {
+		const local = new Date( "2020-06-23T13:46:37.003-05:00" );
+		const utc = new Date( "2020-06-24T09:46:37.003Z" );
+
+		const query = `
+			SELECT
+				local = convert( varchar, @local, 126 ),
+				utc = convert( varchar, @utc, 126 )
+		`;
+
+		return sql.queryFirst( query, {
+			local: { val: local, type: sql.datetime },
+			utc: { val: utc, type: sql.datetime }
+		} ).should.eventually.deep.equal( {
+			local: "2020-06-23T18:46:37.003",
+			utc: "2020-06-24T09:46:37.003"
+		} );
+	} );
+
 	it( "should round trip table types", () => {
 		const datetime = new Date();
 		datetime.setMilliseconds( 0 ); // compensating for sql datetime precision differences

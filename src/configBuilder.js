@@ -42,7 +42,8 @@ function tedious( config ) {
 			connectTimeout,
 			requestTimeout,
 			encrypt,
-			abortTransactionOnError
+			abortTransactionOnError,
+			validateBulkLoadParameters: true
 		}
 	};
 }

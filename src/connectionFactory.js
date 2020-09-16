@@ -1,5 +1,5 @@
 const { promisify } = require( "util" );
-const tedious = require( "tedious" );
+const { connect } = require( "tedious" );
 
 function promisifyConnection( conn ) {
 	const originalBeginTransaction = conn.beginTransaction;
@@ -35,7 +35,7 @@ let id = 0;
 
 function create( config ) {
 	return new Promise( ( resolve, reject ) => {
-		const conn = new tedious.Connection( config );
+		const conn = connect( config );
 		conn.id = id++;
 		promisifyConnection( conn );
 
