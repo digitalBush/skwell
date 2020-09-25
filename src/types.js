@@ -3,6 +3,8 @@
 const { TYPES } = require( "tedious" );
 
 const TypeWrapper = require( "./TypeWrapper" );
+const TvpType = require( "./TvpType" );
+
 const { max } = TypeWrapper;
 
 const types = {
@@ -30,7 +32,6 @@ const types = {
 	text: () => new TypeWrapper( TYPES.Text ),
 	time: ( scale = 7 ) => new TypeWrapper( TYPES.Time, { scale } ),
 	tinyint: () => new TypeWrapper( TYPES.TinyInt ),
-	tvp: () => new TypeWrapper( TYPES.TVP ),
 	udt: () => new TypeWrapper( TYPES.UDT ),
 	uniqueidentifier: () => new TypeWrapper( TYPES.UniqueIdentifier ),
 	varbinary: ( length = 8000 ) => new TypeWrapper( TYPES.VarBinary, { length } ),
@@ -38,6 +39,7 @@ const types = {
 	variant: () => new TypeWrapper( TYPES.Variant ),
 	xml: () => new TypeWrapper( TYPES.Xml )
 };
+types.tvp = cols => new TvpType( cols );
 
 Object.keys( types ).forEach( key => {
 	types[ key ].nullable = function( val ) {
