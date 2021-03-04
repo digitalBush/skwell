@@ -1,5 +1,9 @@
 ## 6.x
 
+### 6.0.1
+
+* Fix security issues and update a few dependencies
+
 ### 6.0.0
 
 * Updated non-dev dependencies.
