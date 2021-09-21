@@ -2,10 +2,9 @@
 const { config } = testHelpers;
 
 const { promisify } = require( "util" );
-const { Writable } = require( "stream" );
+const { Writable, pipeline } = require( "stream" );
 
-const pump = require( "pump" );
-const pumpAsync = promisify( pump );
+const pipelineAsync = promisify( pipeline );
 
 const skwell = require( "src" );
 
@@ -151,7 +150,7 @@ describe( "Streaming - Integration", () => {
 		} );
 	} );
 
-	it( "should cancel request if receiving stream closes", done => {
+	it( "should cancel request if receiving stream closes", async () => {
 		const brokenWriter = new Writable( {
 			objectMode: true,
 			write( _1, _2, cb ) {
@@ -166,13 +165,8 @@ describe( "Streaming - Integration", () => {
 		`;
 
 		const readable = sql.queryStream( query );
-		readable.on( "error", err => {
-			err.message.should.equal( "Canceled." );
-			err.stack.should.have.string( "streaming.spec.js" );
-			done();
-		} );
 
-		pump( [ readable, brokenWriter ], () => {} );
+		await pipelineAsync( [ readable, brokenWriter ] ).should.eventually.be.rejectedWith( "oops" );
 	} );
 
 	it( "should rollback transaction if receiving stream closes", async () => {
@@ -186,7 +180,7 @@ describe( "Streaming - Integration", () => {
 		await sql.transaction( async tx => {
 			await tx.execute( "INSERT INTO MutationTests VALUES(1, 'should go away')" );
 			const readable = tx.queryStream( "SELECT 1 WHERE 1=0" );
-			await pumpAsync( [ readable, brokenWriter ] );
+			await pipelineAsync( [ readable, brokenWriter ] );
 		} )
 			.should.eventually.be.rejectedWith( "Automatic Rollback. Failed Because: oops" );
 
