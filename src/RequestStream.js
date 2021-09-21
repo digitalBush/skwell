@@ -1,4 +1,4 @@
-const { Readable } = require( "readable-stream" );
+const { Readable } = require( "stream" );
 const { Request } = require( "tedious" );
 
 const transformRow = require( "./transformRow" );
