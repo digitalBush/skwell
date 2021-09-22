@@ -1,3 +1,9 @@
+## 7.x
+
+### 7.0.0
+
+* Upgraded to latest tedious + latest node LTS
+
 ## 6.x
 
 ### 6.0.1
