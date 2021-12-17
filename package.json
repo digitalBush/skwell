@@ -19,7 +19,7 @@
   "license": "ISC",
   "dependencies": {
     "callsites": "^3.1.0",
-    "generic-pool": "^3.7.2",
+    "generic-pool": "^3.8.2",
     "tedious": "^14.0.0"
   },
   "devDependencies": {
