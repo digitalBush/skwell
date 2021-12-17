@@ -14,7 +14,7 @@ class Client extends Api {
 		const pool = poolFactory( this, config );
 
 		pool.on( "factoryCreateError", e => {
-			this.emit( "error", e );
+			setImmediate( () => this.emit( "error", e ) );
 		} );
 
 		const {
