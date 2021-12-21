@@ -1,3 +1,14 @@
+## 8.x
+
+### 8.0.0
+
+* 8.0.0-new-tedious.0
+* audit fix
+* Fix issue when unable to connect to server within async call stack
+* Update to latest generic-pool
+* Update dev depdendencies
+* Update to latest tedious
+
 ## 7.x
 
 ### 7.0.0
