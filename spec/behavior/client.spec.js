@@ -36,18 +36,26 @@ describe( "client", () => {
 	} );
 
 	describe( "when pool cannot create db connection", () => {
-		let client, fakeEmit;
+		let client, fakeEmit, immediateSpy;
 
 		const someError = new Error( "Doh!" );
 
 		before( () => {
+			immediateSpy = sinon.spy( global, "setImmediate" );
 			setup();
 			fakeEmit = sinon.stub();
 			client = new Client( {} );
 
 			sinon.replace( client, "emit", fakeEmit );
-
 			pool.emit( "factoryCreateError", someError );
+		} );
+
+		after( () => {
+			immediateSpy.restore();
+		} );
+
+		it( "should call setImmediate", () => {
+			immediateSpy.should.be.calledOnce();
 		} );
 
 		it( "emits error on client", () => {

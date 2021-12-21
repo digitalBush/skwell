@@ -213,10 +213,6 @@ class Api extends EventEmitter {
 				await this.executeBatch( bulk.getTableCreationSql() );
 			}
 
-			for ( const row of options.rows ) {
-				bulk.addRow( row );
-			}
-
 			return new Promise( ( resolve, reject ) => {
 				bulk.callback = function ( err, rowCount ) {
 					if ( err ) {
@@ -224,7 +220,7 @@ class Api extends EventEmitter {
 					}
 					return resolve( rowCount );
 				};
-				conn.execBulkLoad( bulk );
+				conn.execBulkLoad( bulk, options.rows );
 			} );
 		} );
 	}
