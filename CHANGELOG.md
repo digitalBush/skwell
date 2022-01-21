@@ -1,5 +1,9 @@
 ## 8.x
 
+### 8.0.1
+
+* Fix issue with table params using reserved words
+
 ### 8.0.0
 
 * 8.0.0-new-tedious.0
