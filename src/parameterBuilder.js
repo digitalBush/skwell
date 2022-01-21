@@ -38,8 +38,8 @@ function addArrayParamExpansion( request, key, param ) {
 function addTableParam( request, key, param ) {
 	const typeList = typeDeclarations( param.type );
 
-	const table = typeList.map( ( { name, declaration } ) => `${ name } ${ declaration }` ).join( "," );
-	const json = typeList.map( ( { name, declaration } ) => `${ name } ${ declaration } '$.${ name }'` ).join( "," );
+	const table = typeList.map( ( { name, declaration } ) => `[${ name }] ${ declaration }` ).join( "," );
+	const json = typeList.map( ( { name, declaration } ) => `[${ name }] ${ declaration } '$.${ name }'` ).join( "," );
 
 	const prepend = `
 		DECLARE @${ key } TABLE (

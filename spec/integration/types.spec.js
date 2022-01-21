@@ -95,7 +95,8 @@ describe( "Types - Integration", () => {
 					datetime2: sql.datetime2( 7 ),
 					nvarchar3: sql.nvarchar( 3 ),
 					nvarchar: sql.nvarchar,
-					nvarcharmax: sql.nvarchar( sql.max )
+					nvarcharmax: sql.nvarchar( sql.max ),
+					index: sql.tinyint
 				},
 				val: [ {
 					bit: true,
@@ -106,7 +107,8 @@ describe( "Types - Integration", () => {
 					datetime2,
 					nvarchar3: "!".repeat( 3 ),
 					nvarchar: "!".repeat( 4000 ),
-					nvarcharmax: "!".repeat( 4001 )
+					nvarcharmax: "!".repeat( 4001 ),
+					index: 7
 				} ]
 			}
 		} ).should.eventually.deep.equal( {
@@ -118,7 +120,8 @@ describe( "Types - Integration", () => {
 			datetime2,
 			nvarchar3: "!!!",
 			nvarchar: "!".repeat( 4000 ),
-			nvarcharmax: "!".repeat( 4001 )
+			nvarcharmax: "!".repeat( 4001 ),
+			index: 7
 		} );
 	} );
 
