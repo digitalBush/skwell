@@ -1,19 +1,28 @@
 const { sinon, proxyquire } = testHelpers;
 
 describe( "RequestStream", () => {
-	describe( "when destroying", () => {
-		let RequestStream, requestStream, request;
+	let RequestStream, request;
+	beforeEach( () => {
+		request = {
+			on: sinon.stub()
+		};
+		const Request = sinon.stub().returns( request );
+		RequestStream = proxyquire( "src/RequestStream", {
+			tedious: {
+				Request
+			}
+		} );
+	} );
 
+	it( "should init inherited stream correctly", () => {
+		const stream = new RequestStream();
+		stream._readableState.should.have.property( "objectMode", true );
+		stream._readableState.should.have.property( "emitClose", true );
+	} );
+
+	describe( "when destroying", () => {
+		let requestStream;
 		beforeEach( () => {
-			request = {
-				on: sinon.stub()
-			};
-			const Request = sinon.stub().returns( request );
-			RequestStream = proxyquire( "src/RequestStream", {
-				tedious: {
-					Request
-				}
-			} );
 			requestStream = new RequestStream();
 		} );
 

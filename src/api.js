@@ -178,6 +178,7 @@ class Api extends EventEmitter {
 			addRequestParams( stream.request, params );
 
 			await new Promise( resolve => {
+				stream.on( "close", resolve );
 				stream.on( "end", resolve );
 				stream.on( "error", resolve ); // An error emitted here has already called stream destroy
 				conn[ methodName ]( stream.request );

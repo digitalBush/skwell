@@ -12,7 +12,8 @@ class RequestStream extends Readable {
 	constructor( sql ) {
 		const callStack = new Error().stack;
 		super( {
-			objectMode: true
+			objectMode: true,
+			emitClose: true
 		} );
 
 		const request = new Request( sql, err => {
