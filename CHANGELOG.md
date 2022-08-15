@@ -1,3 +1,11 @@
+## 9.x
+
+### 9.0.0
+
+* Update tedious
+* Updating dev deps + npm audit fix
+* Adding close handler
+
 ## 8.x
 
 ### 8.0.1
