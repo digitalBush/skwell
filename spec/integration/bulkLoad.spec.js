@@ -55,15 +55,18 @@ describe( "Bulk Load - Integration", () => {
 			rows.should.deep.equal( [ { id: 1, other: 1 }, { id: 2, other: null }, { id: 3, other: null } ] );
 		} );
 
-		it( "should error when bulk loading a missing table without create", async () => {
-			return sql.bulkLoad( "BulkLoadTestWontBeThere", {
+		it( "should error when bulk loading a missing table without create", done => {
+			sql.bulkLoad( "BulkLoadTestWontBeThere", {
 				schema: {
 					id: sql.int.nullable()
 				},
 				rows: [ { id: 1 }, { id: 2 }, { id: 3 } ]
-			} )
-				.should.eventually.be.rejectedWith( "Invalid object name 'BulkLoadTestWontBeThere'" )
-				.and.have.property( "stack" ).with.string( "bulkLoad.spec.js" );
+			} ).catch( e => {
+				e.should.have.property( "stack" ).with.string( "bulkLoad.spec.js" );
+				e.should.have.property( "errors" );
+				e.errors[ 0 ].message.should.contain( "BulkLoadTestWontBeThere" );
+				done();
+			} );
 		} );
 	} );
 
