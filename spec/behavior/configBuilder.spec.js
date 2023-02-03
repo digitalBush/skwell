@@ -60,7 +60,8 @@ describe( "configBuilder", () => {
 					encrypt: false,
 					port: 1433,
 					requestTimeout: 15000,
-					validateBulkLoadParameters: true
+					validateBulkLoadParameters: true,
+					multiSubnetFailover: true
 				},
 				server: undefined
 			} );
