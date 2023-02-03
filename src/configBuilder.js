@@ -23,7 +23,8 @@ function tedious( config ) {
 		connectTimeout = DEFAULT_CONNECT_TIMEOUT,
 		requestTimeout = DEFAULT_REQUEST_TIMEOUT,
 		encrypt = false,
-		abortTransactionOnError = true } = config;
+		abortTransactionOnError = true,
+		multiSubnetFailover = true } = config;
 	const authenticationType = config.authenticationType ||
 		( domain ? NTLM_AUTHENTICATION_TYPE : DEFAULT_AUTHENTICATION_TYPE );
 	return {
@@ -43,7 +44,8 @@ function tedious( config ) {
 			requestTimeout,
 			encrypt,
 			abortTransactionOnError,
-			validateBulkLoadParameters: true
+			validateBulkLoadParameters: true,
+			multiSubnetFailover
 		}
 	};
 }
