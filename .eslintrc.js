@@ -1,18 +1,20 @@
 module.exports = {
 	extends: [ "leankit", "leankit/es6" ],
 	parserOptions: {
-		ecmaVersion: 2018,
-		sourceType: 'module'
+		ecmaVersion: 13
+	},
+	env: {
+		node: true,
+		browser: false
 	},
 	rules: {
-		strict: [ "error", "global" ],
 		"init-declarations": 0,
 		"global-require": 0,
 		"max-lines": 0,
-		"padded-blocks": ["error", {
+		"padded-blocks": [ "error", {
 			classes: "always",
 			blocks: "never",
 			switches: "never"
-		}]
+		} ]
 	}
 };
