@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-redeclare
 const { Request, ISOLATION_LEVEL } = require( "tedious" );
 const EventEmitter = require( "events" );
 
@@ -7,34 +8,60 @@ const fileLoader = require( "./fileLoader" );
 const transformRow = require( "./transformRow" );
 const RequestStream = require( "./RequestStream" );
 
-function buildError( error, callStack ) {
-	const capturedStackParts = callStack.split( "\n" ).slice( 1 );
+function buildError( error, callStack, depth = 1 ) {
+	const capturedStackParts = callStack.split( "\n" ).slice( depth );
 	capturedStackParts.unshift( error.toString() );
 	error.stack = capturedStackParts.join( "\n" );
 	return error;
 }
 
-async function runQuery( conn, { text, methodName }, params ) {
-	const sets = [];
-	let rows;
+async function runQuery( conn, { text, methodName }, params, opts = {} ) {
+	let sets,
+		outputParams,
+		returnStatus,
+		rows;
+
+	const { collectData } = opts;
+
 	return new Promise( ( resolve, reject ) => {
-		const request = new Request( text, err => {
+		const request = new Request( text, ( err, rowCount ) => {
 			if ( err ) {
 				return reject( err );
 			}
-			if ( rows !== undefined ) {
+			if ( sets && rows !== undefined ) {
 				sets.push( rows );
 			}
-			return resolve( sets );
+			return resolve( { sets, outputParams, returnStatus, rowCount } );
 		} );
-		addRequestParams( request, params );
-		request.on( "columnMetadata", () => {
-			if ( rows ) {
-				sets.push( rows );
-			}
-			rows = [];
-		} );
-		request.on( "row", obj => rows.push( transformRow( obj ) ) );
+		const { hasOutputParams } = addRequestParams( request, params );
+
+		if ( collectData ) {
+			sets = [];
+			request.on( "columnMetadata", () => {
+				if ( rows ) {
+					sets.push( rows );
+				}
+				rows = [];
+			} );
+
+			request.on( "row", obj => rows.push( transformRow( obj ) ) );
+		}
+
+		if ( hasOutputParams ) {
+			request.on( "returnValue", function ( name, value ) {
+				if ( !outputParams ) {
+					outputParams = {};
+				}
+				outputParams[ name ] = value;
+			} );
+		}
+
+		if ( methodName === "callProcedure" ) {
+			request.on( "doneProc", function ( _rowCount, _more, statusCode ) {
+				returnStatus = statusCode;
+			} );
+		}
+
 		conn[ methodName ]( request );
 	} );
 }
@@ -54,24 +81,62 @@ async function prepare( cmd ) {
 	};
 }
 
+function assertSingleSet( sets ) {
+	if ( sets && sets.length > 1 ) {
+		throw new Error( "Query returns more than one set of data. Use querySets method to return multiple sets of data." );
+	}
+}
+
 class Api extends EventEmitter {
 
-	async execute( cmd, params ) {
-		const callStack = new Error().stack;
-		const { text, methodName } = await prepare( cmd );
+	async querySets( cmd, params ) {
+		const transform = ( { sets } ) => sets;
+		return this.#run( { cmd, params, transform } );
+	}
 
-		return this.withConnection( conn => {
-			return new Promise( ( resolve, reject ) => {
-				const request = new Request( text, ( err, rowCount ) => {
-					if ( err ) {
-						return reject( buildError( err, callStack ) );
-					}
-					return resolve( rowCount );
-				} );
-				addRequestParams( request, params );
-				conn[ methodName ]( request );
-			} );
-		} );
+	async query( cmd, params ) {
+		const transform = ( { sets } ) => {
+			assertSingleSet( sets );
+
+			return sets[ 0 ] || [];
+		};
+
+		return this.#run( { cmd, params, transform } );
+	}
+
+	async queryFirst( cmd, params ) {
+		const transform = ( { sets } ) => {
+			assertSingleSet( sets );
+
+			const set = sets[ 0 ] || [];
+			return set[ 0 ] || null;
+		};
+
+		return this.#run( { cmd, params, transform } );
+	}
+
+	async queryValue( cmd, params ) {
+		const transform = ( { sets } ) => {
+			assertSingleSet( sets );
+
+			// TODO: enforce <= 1 row and only 1 prop on that row?
+			const set = sets[ 0 ] || [];
+			const row = set[ 0 ] || null;
+
+			if ( row ) {
+				for ( const prop in row ) { // eslint-disable-line guard-for-in
+					return row[ prop ];
+				}
+			}
+			return null;
+		};
+
+		return this.#run( { cmd, params, transform } );
+	}
+
+	async execute( cmd, params ) {
+		const transform = ( { rowCount } ) => rowCount;
+		return this.#run( { cmd, params, transform, collectData: false } );
 	}
 
 	async executeBatch( statement ) {
@@ -91,86 +156,8 @@ class Api extends EventEmitter {
 		} );
 	}
 
-	async querySets( cmd, params ) {
-		const callStack = new Error().stack;
-		const preparedCmd = await prepare( cmd );
-		return this.withConnection( async conn => {
-			try {
-				const sets = await runQuery( conn, preparedCmd, params );
-				return sets;
-			} catch ( error ) {
-				throw buildError( error, callStack );
-			}
-		} );
-	}
-
-	async query( cmd, params ) {
-		const callStack = new Error().stack;
-		const preparedCmd = await prepare( cmd );
-		return this.withConnection( async conn => {
-			let sets;
-			try {
-				sets = await runQuery( conn, preparedCmd, params );
-				if ( sets && sets.length > 1 ) {
-					throw new Error( "Query returns more than one set of data. Use querySets method to return multiple sets of data." );
-				}
-				return sets[ 0 ] || [];
-			} catch ( error ) {
-				throw buildError( error, callStack );
-			}
-		} );
-	}
-
-	async queryFirst( cmd, params ) {
-		const callStack = new Error().stack;
-		const preparedCmd = await prepare( cmd );
-		return this.withConnection( async conn => {
-			let sets;
-			try {
-				sets = await runQuery( conn, preparedCmd, params );
-
-				if ( sets && sets.length > 1 ) {
-					throw new Error( "Query returns more than one set of data. Use querySets method to return multiple sets of data." );
-				}
-				const set = sets[ 0 ] || [];
-
-				return set[ 0 ] || null;
-			} catch ( error ) {
-				throw buildError( error, callStack );
-			}
-		} );
-	}
-
-	// This implementation is weird because we're getting objects from our internal query
-	// TODO: Would we rather listen for the 'columnMetadata' event also and take better control of this?
-	async queryValue( cmd, params ) {
-		const callStack = new Error().stack;
-		const preparedCmd = await prepare( cmd );
-		return this.withConnection( async conn => {
-			let sets;
-			try {
-				sets = await runQuery( conn, preparedCmd, params );
-
-				if ( sets && sets.length > 1 ) {
-					throw new Error( "Query returns more than one set of data. Use querySets method to return multiple sets of data." );
-				}
-				const set = sets[ 0 ] || [];
-				const row = set[ 0 ] || null;
-				if ( row ) {
-					// TODO: throw Error if shape of data > 1 property?
-					for ( const prop in row ) { // eslint-disable-line guard-for-in
-						return row[ prop ];
-					}
-				}
-				return null;
-			} catch ( error ) {
-				throw buildError( error, callStack );
-			}
-		} );
-	}
-
 	queryStream( cmd, params ) {
-		const stream = new RequestStream( );
+		const stream = new RequestStream();
 		this.withConnection( async conn => {
 			const { text, methodName } = await prepare( cmd );
 			stream.request.sqlTextOrProcedure = text;
@@ -223,6 +210,31 @@ class Api extends EventEmitter {
 				};
 				conn.execBulkLoad( bulk, options.rows );
 			} );
+		} );
+	}
+
+	async #run( { cmd, params, transform, collectData = true } ) {
+		const callStack = new Error().stack;
+		const preparedCmd = await prepare( cmd );
+		return this.withConnection( async conn => {
+			const response = await runQuery( conn, preparedCmd, params, { collectData } );
+			const result = transform( response );
+			const { outputParams, returnStatus } = response;
+
+			// Object return mode
+			if ( outputParams !== undefined || returnStatus !== undefined ) {
+				const obj = { result };
+				if ( outputParams !== undefined ) {
+					obj.outputParams = outputParams;
+				}
+				if ( returnStatus !== undefined ) {
+					obj.returnStatus = returnStatus;
+				}
+				return obj;
+			}
+			return result;
+		} ).catch( e => {
+			throw buildError( e, callStack, 2 );
 		} );
 	}
 

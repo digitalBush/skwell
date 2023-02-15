@@ -62,8 +62,10 @@ describe( "Basic - Integration", () => {
 					val: 1
 				}
 			} )
-				.should.eventually.equal( 1 );
+				.should.eventually.eql( { result: 1, returnStatus: 0 } );
 		} );
+
+		// TODO: returnValue and output params
 	} );
 
 	describe( "executeBatch", () => {
@@ -270,11 +272,34 @@ describe( "Basic - Integration", () => {
 					val: 1
 				}
 			} )
-				.should.eventually.deep.equal( [ {
-					attribute_id: 1,
-					attribute_name: "DBMS_NAME",
-					attribute_value: "Microsoft SQL Server"
-				} ] );
+				.should.eventually.deep.equal( {
+					result: [ {
+						attribute_id: 1,
+						attribute_name: "DBMS_NAME",
+						attribute_value: "Microsoft SQL Server"
+					} ],
+					returnStatus: 0
+				} );
+		} );
+
+		it( "should work with sprocs that have output params and return values", () => {
+			return sql.transaction( async tx => {
+				await tx.executeBatch( `
+					CREATE PROCEDURE #sp_Test(@a int output)
+					AS
+						select lol = 1
+						SET @a = 2;
+						RETURN 3;
+				` );
+
+				return tx.query( sql.sproc( "#sp_Test" ), {
+					a: { type: sql.int, output: true }
+				} );
+			} ).should.eventually.deep.equal( {
+				result: [ { lol: 1 } ],
+				outputParams: { a: 2 },
+				returnStatus: 3
+			} );
 		} );
 	} );
 
@@ -349,6 +374,7 @@ describe( "Basic - Integration", () => {
 				.should.eventually.be.rejectedWith( "Query returns more than one set of data. Use querySets method to return multiple sets of data." )
 				.and.have.property( "stack" ).with.string( "basic.spec.js" );
 		} );
+
 		it( "should work with sprocs", () => {
 			return sql.queryFirst( sql.sproc( "sp_server_info" ), {
 				attribute_id: {
@@ -357,9 +383,12 @@ describe( "Basic - Integration", () => {
 				}
 			} )
 				.should.eventually.deep.equal( {
-					attribute_id: 1,
-					attribute_name: "DBMS_NAME",
-					attribute_value: "Microsoft SQL Server"
+					result: {
+						attribute_id: 1,
+						attribute_name: "DBMS_NAME",
+						attribute_value: "Microsoft SQL Server"
+					},
+					returnStatus: 0
 				} );
 		} );
 	} );
@@ -449,7 +478,10 @@ describe( "Basic - Integration", () => {
 					val: 1
 				}
 			} )
-				.should.eventually.deep.equal( 1 );
+				.should.eventually.deep.equal( {
+					result: 1,
+					returnStatus: 0
+				} );
 		} );
 	} );
 } );

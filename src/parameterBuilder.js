@@ -64,11 +64,15 @@ function addTvpParam( request, key, param ) {
 	const val = param.type.getVal( param.val );
 	request.addParameter( key, param.type.type, val );
 }
+
 module.exports = {
 	addRequestParams( request, params ) {
 		if ( !params ) {
-			return;
+			return false;
 		}
+
+		let hasOutputParams = false;
+
 		Object.keys( params ).forEach( key => {
 			const param = params[ key ];
 			if ( typeof param.type === "function" ) {
@@ -78,14 +82,22 @@ module.exports = {
 			if ( param.type instanceof TvpType ) {
 				addTvpParam( request, key, param );
 			} else if ( !Array.isArray( param.val ) ) {
-				const { val, type: { type, length, precision, scale } } = param;
-				request.addParameter( key, type, val, { length, precision, scale } );
+				const { val, type: { type, length, precision, scale }, output = false } = param;
+				let method = "addParameter";
+				if ( output ) {
+					method = "addOutputParameter";
+					hasOutputParams = true;
+				}
+
+				request[ method ]( key, type, val, { length, precision, scale } );
 			} else if ( param.type instanceof TypeWrapper ) {
 				addArrayParamExpansion( request, key, param );
 			} else {
 				addTableParam( request, key, param );
 			}
 		} );
+
+		return { hasOutputParams };
 	},
 
 	addBulkLoadParam( bulk, schema ) {
