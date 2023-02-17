@@ -149,7 +149,7 @@ describe( "Types - Integration", () => {
 
 		ids.should.deep.equal( {
 			result: [ { value: "1" }, { value: "2" } ],
-			returnStatus: 0
+			returnValue: 0
 		} );
 	} );
 

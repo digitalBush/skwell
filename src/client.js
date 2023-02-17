@@ -14,7 +14,7 @@ class Client extends Api {
 		const pool = poolFactory( this, config );
 
 		pool.on( "factoryCreateError", e => {
-			setImmediate( () => this.emit( "error", e ) );
+			this.emit( "error", e );
 		} );
 
 		const {
@@ -27,6 +27,9 @@ class Client extends Api {
 			onBeginTransaction,
 			onEndTransaction
 		};
+
+		// Defer pool start so that we can bind error handlers
+		setImmediate( () => pool.start() );
 	}
 
 	async withConnection( action ) {
@@ -62,7 +65,7 @@ class Client extends Api {
 	async dispose() {
 		const { pool } = this[ _state ];
 		await pool.drain().then( () => {
-			pool.clear();
+			return pool.clear();
 		} );
 	}
 

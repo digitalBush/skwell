@@ -10,7 +10,8 @@ describe( "client", () => {
 	function setup() {
 		pool = Object.assign( new EventEmitter(), {
 			acquire: sinon.stub().resolves( expectedConnection ),
-			release: sinon.stub().resolves()
+			release: sinon.stub().resolves(),
+			start: sinon.stub()
 		} );
 
 		poolFactory = sinon.stub().returns( pool );
@@ -29,6 +30,10 @@ describe( "client", () => {
 			client = new Client( config );
 		} );
 
+		it( "should start the pool", () => {
+			pool.start.should.be.calledOnce();
+		} );
+
 		it( "should get a pool from the poolFactory", () => {
 			poolFactory.should.be.calledOnce()
 				.and.calledWithExactly( client, config );
@@ -36,26 +41,17 @@ describe( "client", () => {
 	} );
 
 	describe( "when pool cannot create db connection", () => {
-		let client, fakeEmit, immediateSpy;
+		let client, fakeEmit;
 
 		const someError = new Error( "Doh!" );
 
 		before( () => {
-			immediateSpy = sinon.spy( global, "setImmediate" );
 			setup();
 			fakeEmit = sinon.stub();
 			client = new Client( {} );
 
 			sinon.replace( client, "emit", fakeEmit );
 			pool.emit( "factoryCreateError", someError );
-		} );
-
-		after( () => {
-			immediateSpy.restore();
-		} );
-
-		it( "should call setImmediate", () => {
-			immediateSpy.should.be.calledOnce();
 		} );
 
 		it( "emits error on client", () => {

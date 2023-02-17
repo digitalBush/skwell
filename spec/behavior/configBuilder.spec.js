@@ -7,7 +7,8 @@ describe( "configBuilder", () => {
 				acquireTimeoutMillis: 15000,
 				max: 10,
 				min: 1,
-				testOnBorrow: true
+				testOnBorrow: true,
+				autostart: false
 			} );
 		} );
 

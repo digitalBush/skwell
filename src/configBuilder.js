@@ -9,6 +9,7 @@ function connectionPool( config ) {
 
 	const poolConfig = Object.assign( { min: 1, max: 10, acquireTimeoutMillis: connectTimeout }, pool );
 	poolConfig.testOnBorrow = true;
+	poolConfig.autostart = false;
 	return poolConfig;
 }
 

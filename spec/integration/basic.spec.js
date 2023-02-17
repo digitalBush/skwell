@@ -62,7 +62,7 @@ describe( "Basic - Integration", () => {
 					val: 1
 				}
 			} )
-				.should.eventually.eql( { result: 1, returnStatus: 0 } );
+				.should.eventually.eql( { result: 1, returnValue: 0 } );
 		} );
 
 		// TODO: returnValue and output params
@@ -278,7 +278,7 @@ describe( "Basic - Integration", () => {
 						attribute_name: "DBMS_NAME",
 						attribute_value: "Microsoft SQL Server"
 					} ],
-					returnStatus: 0
+					returnValue: 0
 				} );
 		} );
 
@@ -298,7 +298,7 @@ describe( "Basic - Integration", () => {
 			} ).should.eventually.deep.equal( {
 				result: [ { lol: 1 } ],
 				outputParams: { a: 2 },
-				returnStatus: 3
+				returnValue: 3
 			} );
 		} );
 	} );
@@ -388,7 +388,7 @@ describe( "Basic - Integration", () => {
 						attribute_name: "DBMS_NAME",
 						attribute_value: "Microsoft SQL Server"
 					},
-					returnStatus: 0
+					returnValue: 0
 				} );
 		} );
 	} );
@@ -480,7 +480,7 @@ describe( "Basic - Integration", () => {
 			} )
 				.should.eventually.deep.equal( {
 					result: 1,
-					returnStatus: 0
+					returnValue: 0
 				} );
 		} );
 	} );

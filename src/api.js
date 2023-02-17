@@ -18,7 +18,7 @@ function buildError( error, callStack, depth = 1 ) {
 async function runQuery( conn, { text, methodName }, params, opts = {} ) {
 	let sets,
 		outputParams,
-		returnStatus,
+		returnValue,
 		rows;
 
 	const { collectData } = opts;
@@ -31,7 +31,7 @@ async function runQuery( conn, { text, methodName }, params, opts = {} ) {
 			if ( sets && rows !== undefined ) {
 				sets.push( rows );
 			}
-			return resolve( { sets, outputParams, returnStatus, rowCount } );
+			return resolve( { sets, outputParams, returnValue, rowCount } );
 		} );
 		const { hasOutputParams } = addRequestParams( request, params );
 
@@ -58,7 +58,7 @@ async function runQuery( conn, { text, methodName }, params, opts = {} ) {
 
 		if ( methodName === "callProcedure" ) {
 			request.on( "doneProc", function ( _rowCount, _more, statusCode ) {
-				returnStatus = statusCode;
+				returnValue = statusCode;
 			} );
 		}
 
@@ -201,6 +201,10 @@ class Api extends EventEmitter {
 				await this.executeBatch( bulk.getTableCreationSql() );
 			}
 
+			if ( !options.rows || options.rows.length === 0 ) {
+				return 0;
+			}
+
 			return new Promise( ( resolve, reject ) => {
 				bulk.callback = function ( err, rowCount ) {
 					if ( err ) {
@@ -219,16 +223,16 @@ class Api extends EventEmitter {
 		return this.withConnection( async conn => {
 			const response = await runQuery( conn, preparedCmd, params, { collectData } );
 			const result = transform( response );
-			const { outputParams, returnStatus } = response;
+			const { outputParams, returnValue } = response;
 
 			// Object return mode
-			if ( outputParams !== undefined || returnStatus !== undefined ) {
+			if ( outputParams !== undefined || returnValue !== undefined ) {
 				const obj = { result };
 				if ( outputParams !== undefined ) {
 					obj.outputParams = outputParams;
 				}
-				if ( returnStatus !== undefined ) {
-					obj.returnStatus = returnStatus;
+				if ( returnValue !== undefined ) {
+					obj.returnValue = returnValue;
 				}
 				return obj;
 			}
