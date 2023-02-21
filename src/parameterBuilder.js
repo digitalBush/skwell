@@ -1,4 +1,5 @@
 const types = require( "./types" );
+const { valueToType } = require( "./typeMapper" );
 
 const TypeWrapper = require( "./TypeWrapper" );
 const TvpType = require( "./TvpType" );
@@ -65,6 +66,13 @@ function addTvpParam( request, key, param ) {
 	request.addParameter( key, param.type.type, val );
 }
 
+function missingType( val ) {
+	if ( val === null || val === undefined ) {
+		return true;
+	}
+	return !val.hasOwnProperty( "type" );
+}
+
 module.exports = {
 	addRequestParams( request, params ) {
 		if ( !params ) {
@@ -74,7 +82,15 @@ module.exports = {
 		let hasOutputParams = false;
 
 		Object.keys( params ).forEach( key => {
-			const param = params[ key ];
+			let param = params[ key ];
+
+			if ( missingType( param ) ) {
+				param = {
+					val: param,
+					type: valueToType( param )
+				};
+			}
+
 			if ( typeof param.type === "function" ) {
 				param.type = param.type();
 			}
