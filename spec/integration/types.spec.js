@@ -55,6 +55,50 @@ describe( "Types - Integration", () => {
 		} );
 	} );
 
+	it( "should round trip data without types", () => {
+		const datetime2 = new Date();
+		const query = `
+		SELECT
+			@bit as [bit],
+			@int as [int],
+			@bigint as [bigint],
+			@bigintFromNumber as [bigintFromNumber],
+			@float as [float],
+			@datetime2 as [datetime2],
+			@nvarchar3 as [nvarchar3],
+			@nvarchar as [nvarchar],
+			@nvarcharmax as [nvarcharmax],
+			@empty as [empty],
+			@emptyAlso as [emptyAlso]
+		`;
+
+		return sql.queryFirst( query, {
+			bit: true,
+			int: 1,
+			bigint: 1n,
+			bigintFromNumber: 9876543210,
+			float: 1.23,
+			datetime2,
+			nvarchar3: "☃️".repeat( 3 ),
+			nvarchar: "!".repeat( 4000 ),
+			nvarcharmax: "!".repeat( 4001 ),
+			empty: null,
+			emptyAlso: undefined
+		} ).should.eventually.deep.equal( {
+			bit: true,
+			int: 1,
+			bigint: "1",
+			bigintFromNumber: "9876543210",
+			float: 1.23,
+			datetime2,
+			nvarchar3: "☃️☃️☃️",
+			nvarchar: "!".repeat( 4000 ),
+			nvarcharmax: "!".repeat( 4001 ),
+			empty: null,
+			emptyAlso: null
+		} );
+	} );
+
 	it( "should persist dates in UTC", () => {
 		const local = new Date( "2020-06-23T13:46:37.003-05:00" );
 		const utc = new Date( "2020-06-24T09:46:37.003Z" );
