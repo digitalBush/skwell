@@ -2,7 +2,8 @@ const defaults = {
 	username: "sa",
 	password: "P@ssw0rd",
 	server: "localhost",
-	database: "master"
+	database: "master",
+	port: 1434
 };
 
 let localConfig = {};
