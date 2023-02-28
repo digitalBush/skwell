@@ -210,7 +210,7 @@ class Api extends EventEmitter {
 					if ( err ) {
 						return reject( buildError( err, callStack ) );
 					}
-					return resolve( rowCount );
+					return resolve( { rowCount } );
 				};
 				conn.execBulkLoad( bulk, options.rows );
 			} );

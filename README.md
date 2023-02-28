@@ -1,10 +1,11 @@
-# Skwell
+on# Skwell
 [![Build Status](https://travis-ci.org/digitalBush/skwell.svg?branch=master)](https://travis-ci.org/digitalBush/skwell)
 [![Coverage Status](https://coveralls.io/repos/github/digitalBush/skwell/badge.svg)](https://coveralls.io/github/digitalBush/skwell)
 
 A promised based SQL Server client with connection pooling.
 
-## Getting Started
+
+## Setup
 
 First we need to create a client.
 
@@ -15,9 +16,9 @@ const sql = skwell.connect( {
 	password: "sekret",
 	server: "localhost",
 	database: "test",
-	domain: "lol.com", // Used for NTLM auth, omit if using standard auth
 	// Everything below is optional, values listed are defaults
 	port: 1433,
+	domain: null, // Only needed for NTLM auth
 	pool: {
 		min: 1,
 		max: 10
@@ -25,6 +26,8 @@ const sql = skwell.connect( {
 	connectTimeout: 15000, //ms
 	requestTimeout: 15000, //ms
 	encrypt: false,
+	abortTransactionOnError: true,
+	multiSubnetFailover: true,
 	onBeginTransaction( tx ){
 		// Executes at the beginning of transaction
 	},
@@ -35,58 +38,343 @@ const sql = skwell.connect( {
 
 ```
 
+At this point, you have a client ( `sql` ) that is meant to be shared. A pool of connections is maintained in the background and one will be chosen for you to execute your queries.
 
-At this point, you have a client (`sql`) that is ready to be used non-transactionally. A pool of connections is maintained in the background and one will be chosen for you to execute your queries. Queries will resolve with the values or be rejected with an error.
-
-Server errors(like when the server goes away) will be emitted on this client and can be handled accordingly.
+This client is an event emitter and will emit an `error` event when there is a problem connecting to the server. You can handle that like so:
 
 ```js
 sql.on( "error", err => {
 	// handle the error things
 } )
 ```
-The signature of everything except `bulkLoad` takes a query as the first argument. This query can be a string or a promise that resolves to a string. Skwell provides a `sql.file( "./relative.file.sql" )` method to load a file and cache the resulting text. If you are calling a stored procedure, use `sql.sproc( "name of stored procedure" )`.
+## API
 
-Now, let's make some noise.
-``` js
-// execute, returns the number of rows affected
-const insertedCount = await sql.execute(
-	"INSERT INTO SuperCoolPeople (name) values(@name)",
-	{
-		name: { val: "josh", type: sql.nvarchar( 20 ) }
+### Methods
+
+#### `query( cmd, [ params ]  )`
+---
+Used when query returns a single result set.
+
+**Returns:** Promise that resolves array containing objects or an empty array if there are no rows.
+
+**Example:**
+```js
+	const users = await sql.query(`
+		SELECT userId, name
+		FROM Users
+		WHERE groupId = @groupId;
+	`,{
+		groupId: 7
 	} );
+```
 
-// executeBatch, returns the number of rows affected
-// use this when executing DDL statements that can't be run via sp_executesql
-await sql.executeBatch(
-	"CREATE TABLE lol (id int);"
-)
+#### `querySets( cmd, [ params ] )`
+---
+Used when query returns multiple result sets.
 
-// querySets, returns an array of object arrays
-const usersWithPageInfo = await sql.querySets( query, params );
+**Returns:** Promise that resolves array of arrays containing objects. Inner arrays will be empty if a query produces no rows.
 
-// query, returns an array of objects
-const users = await sql.query( query, params );
+**Example:**
+```js
+	const [ [ user ], emails ] = await sql.querySets( `
+		SELECT userId, name
+		FROM Users
+		WHERE userId = @userId;
 
-// queryFirst, returns first row as a single object
-const user = await sql.queryFirst( query, params );
+		SELECT userId, emailAddress
+		FROM Emails
+		WHERE userId = @userId;
+	`, {
+		userId: 42
+	} );
+```
 
-// queryValue, returns first value of first row
-const userId = await sql.queryValue( query, params );
+#### `queryFirst( cmd, [ params ] )`
+---
+Used when query returns single row.
 
-// queryStream, returns a stream of objects generated from the rows
-// use this when you don't want to bring the entire data set into memory at once.
-const userStream = await sql.queryStream( query, params );
+**Returns:** Promise that resolces object or null if there are no rows.
 
-// bulkLoad, returns the number of rows inserted
-const insertedCount = await sql.bulkLoad( "SomeTable", {
-	schema: {
-		id: sql.int.nullable()
-	},
-	rows: [ { id: 1 }, { id: 2 }, { id: 3 } ]
+**Example:**
+```js
+	const {postId, title} = await sql.queryFirst( `
+		SELECT postId, title
+		FROM Posts
+		WHERE postId = @postId;
+	`, {
+		postId: 13
+	} );
+```
+
+#### `queryValue( cmd, [ params ] )`
+---
+Used when query returns single row with a single value.
+
+**Returns:** Promise that resolves value or null if there are no rows.
+
+**Example:**
+```js
+	const value = await sql.queryValue( `
+		SELECT configValue
+		FROM Configuration
+		WHERE userId = @userId
+		AND configKey = @key
+	`, {
+		key: 'showWelcomeScreen',
+		userId: 42
+	} );
+```
+
+#### `execute( cmd, [ params ] )`
+---
+Used when query returns no data.
+
+**Returns:** Promise that resolves to number of affected rows.
+
+**Example:**
+```js
+	const rowCount = await sql.execute( `
+		UPDATE Users
+		SET email = @email
+		WHERE userId = @userId;
+	`, {
+		email: 'new@example.com',
+		userId: 42
+	} );
+```
+
+#### `queryStream( cmd, [ params ] )`
+---
+Used when you want to stream the data.
+
+**Returns:** Stream in object mode that emits the following structures.
+
+At the beginning of a result set you will receive the structure of the rows about to follow.
+```js
+{
+	metadata: {
+		columnNames: []
+	}
+}
+```
+
+After that, you'll receive an object per row.
+```js
+{
+	row: { /* data */ }
+}
+```
+
+**Example:**
+```js
+const { createWriteStream } = require( "node:fs" );
+const { Transform } = require( "node:stream" );
+const { pipeline } = require( "node:stream/promises" );
+
+const simpleCsv = new Transform( {
+	objectMode: true,
+	transform( obj, _, cb ) {
+		if ( obj.metadata ) {
+			this.push( `${ obj.metadata.columnNames.join( "," ) }\n` );
+		} else if ( obj.row ) {
+			this.push( `${ Object.keys( obj.row ).map( k => obj.row[ k ] ).join( "," ) }\n` );
+		}
+		cb();
+	}
 } );
 
+const query = `
+	SELECT *
+	FROM SomeBigTable
+`;
+
+await pipeline( sql.queryStream( query ), simpleCsv, createWriteStream( file ) );
 ```
+
+#### `executeBatch( statement )`
+---
+Used when executing DDL statements that can't be run via `sp_executesql`.
+>*Note:* there is no param support.
+
+**Returns:** Promise that resolves to number of affected rows.
+
+**Example:**
+```js
+	const rowCount = await sql.executeBatch( `
+		CREATE TABLE Foo( bar nvarchar(20) );
+	`);
+```
+
+
+#### `bulkLoad( tableName, options )`
+---
+Used to bulk load data into tables.
+
+**Arguments:**
+* `tableName` - name of permanent or temporary table.
+	>*Note:* temp tables are only supported within transactions.
+* `options` - object with the following properties:
+ ```js
+	{
+		schema: {},
+		rows: [],
+		// Everything below is optional, values listed are defaults
+		create: false,
+		checkConstraints: false,
+		fireTriggers: false,
+		keepNulls: false,
+		tableLock: false
+	}
+```
+
+`schema` is an object with the column name as the key and the value is a type. It looks like the `type` you use for table based params listed below. Types have a `.nullable()` decorator that is used for bulk loading into nullable columns.
+
+`rows` is an array of objects in the shape as defined by your scehma above.
+
+**Returns:** Promise that resolves to number of affected rows.
+
+**Example:**
+```js
+	await sql.transaction( tx=> {
+		const rowCount = await tx.bulkLoad("#test",{
+			schema: {
+				id: sql.bigint,
+				name: sql.nvarchar(50).nullable()
+			},
+			rows: [
+				{ id: 1, name: "Test" },
+				{ id: 2, name: null }
+			],
+			create: true
+		});
+
+		// That data is available within the transaction
+		const data = await tx.query("SELECT * FROM #test");
+	} );
+
+	// But this will throw because #test isn't there.
+	// const data = await sql.query("SELECT * FROM #test");
+
+```
+
+#### `transaction( action, [options] )`
+---
+Execute several commands on the same connection in a transaction.
+
+**Arguments:**
+* `action` - async function taking one argument which is a transactional client that has the same api as above. If this resolves, the transaction will be committed. If it rejects, the transaction will be rolled back.
+	>*Note:* `onBeginTransaction` / `onEndTransaction` callbacks from client initialization will run run before and after `action`.
+
+* `options` - object with the following properties:
+ ```js
+	{
+		context: null,
+		isolationLevel: sql.read_committed
+	}
+```
+
+`context` - This will be set as the `context` property on the transactional client.
+`isolationLevel` - Defaults to `read committed`.
+
+
+**Returns:** Promise that resolves to value returned from action callback above.
+
+**Example:**
+```js
+// Passed as 2nd argument to `.transaction` below
+const opts = {
+	isolationLevel: sql.read_uncommitted,
+	context: { userId: 123 } // This is set on the transaction
+};
+
+const result = await sql.transaction( async tx => {
+	const { userId } = tx.context; // context from opt.context above
+	const groupId = 89;
+
+	await tx.execute(
+		"INSERT INTO Users(id, name) VALUES(@id, @name)",
+		{
+			id: userId,
+			name: "josh"
+		} );
+
+	await tx.execute(
+		"INSERT INTO Groups(id, userId) VALUES(@groupId, @userId)",
+		{
+			groupId,
+			userId,
+		} );
+}, opts );
+
+```
+
+
+#### `dispose`
+---
+
+### Commands
+In the above examples, when you see `cmd` that can be a string or a promise containing a string containing the statements to be execute. Additionally we provide a few helpers.
+
+#### `file( relativePath )`
+---
+Loads and caches a file relative to the calling code. If no file extension is supplied, `.sql` is assumed.
+
+**Example:**
+```sql
+	-- src/sql/foo.sql
+	SELECT id, name
+	FROM foo
+	WHERE bar = @bar;
+```
+```js
+	// src/whatever.js
+	const { id, name } = await sql.queryFirst(
+		sql.file( "sql/foo" ),
+		{ bar:"bar" }
+	);
+```
+
+
+#### `sproc( name )`
+---
+Run a stored procedure. Result will be wrapped in an object that also contains the return value from stored procedure.
+
+**Wrapped Result:**
+```js
+{
+	result, // the data normally returned from method as described above
+	returnValue // value from RETURN statement in stored procedure
+}
+```
+
+**Example:**
+```js
+	const {
+		result: { attribute_id, attribute_name, attribute_value },
+		returnCode
+	} = await sql.queryFirst(
+		sql.sproc( "sp_server_info" ), {
+		attribute_id: 1
+	} );
+
+	// compared with the same sproc executed within SQL statement
+
+	const {
+		attribute_id,
+		attribute_name,
+		attribute_value
+	} = await sql.queryFirst(
+		"EXEC sp_server_info @attribute_id", {
+		attribute_id: 1
+	} )
+
+
+```
+
+### Params
+---
+
+TODO
 
 If you need to pass an array of parameters into your query, there are two ways to do so.
 
@@ -130,9 +418,7 @@ await sql.query( "select name from @people", {
 ```
 
 
-Sometimes you need to execute multiple queries in a transaction. Don't worry, we've got you covered!
 
-``` js
 
 // Passed as 2nd argument to `.transaction` below
 const opts = {

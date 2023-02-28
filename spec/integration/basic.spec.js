@@ -377,10 +377,7 @@ describe( "Basic - Integration", () => {
 
 		it( "should work with sprocs", () => {
 			return sql.queryFirst( sql.sproc( "sp_server_info" ), {
-				attribute_id: {
-					type: sql.int,
-					val: 1
-				}
+				attribute_id: 1
 			} )
 				.should.eventually.deep.equal( {
 					result: {
@@ -389,6 +386,17 @@ describe( "Basic - Integration", () => {
 						attribute_value: "Microsoft SQL Server"
 					},
 					returnValue: 0
+				} );
+		} );
+
+		it( "should work with sprocs executed within SQL", () => {
+			return sql.queryFirst( "EXEC sp_server_info @attribute_id", {
+				attribute_id: 1
+			} )
+				.should.eventually.deep.equal( {
+					attribute_id: 1,
+					attribute_name: "DBMS_NAME",
+					attribute_value: "Microsoft SQL Server"
 				} );
 		} );
 	} );

@@ -1,10 +1,8 @@
 /* eslint-disable camelcase */
 const { config } = testHelpers;
 
-const { promisify } = require( "util" );
-const { Writable, pipeline } = require( "stream" );
-
-const pipelineAsync = promisify( pipeline );
+const { Writable } = require( "node:stream" );
+const { pipeline } = require( "node:stream/promises" );
 
 const skwell = require( "src" );
 
@@ -166,7 +164,7 @@ describe( "Streaming - Integration", () => {
 
 		const readable = sql.queryStream( query );
 
-		await pipelineAsync( [ readable, brokenWriter ] ).should.eventually.be.rejectedWith( "oops" );
+		await pipeline( [ readable, brokenWriter ] ).should.eventually.be.rejectedWith( "oops" );
 	} );
 
 	it( "should rollback transaction if receiving stream closes", async () => {
@@ -180,7 +178,7 @@ describe( "Streaming - Integration", () => {
 		await sql.transaction( async tx => {
 			await tx.execute( "INSERT INTO MutationTests VALUES(1, 'should go away')" );
 			const readable = tx.queryStream( "SELECT 1 WHERE 1=0" );
-			await pipelineAsync( [ readable, brokenWriter ] );
+			await pipeline( [ readable, brokenWriter ] );
 		} )
 			.should.eventually.be.rejectedWith( "Automatic Rollback. Failed Because: oops" );
 
