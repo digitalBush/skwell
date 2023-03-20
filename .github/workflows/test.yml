@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    env:
+      DB_PASSWORD: P@ssw0rd
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: ${{ env.DB_PASSWORD }}
+          MSSQL_PID: Developer
+        ports:
+          - 1434:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools/bin/sqlcmd -U sa -P $MSSQL_SA_PASSWORD -Q 'select 1' -b -o /dev/null"
+          --health-interval 10s
+          --health-timeout 3s
+          --health-start-period 10s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "lts/*"
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Test
+        run: npm test
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@v1

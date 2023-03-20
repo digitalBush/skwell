@@ -8,11 +8,10 @@
     "url": "https://github.com/digitalBush/skwell.git"
   },
   "scripts": {
-    "test": "nyc -r text-summary mocha -r spec/init -R spec 'spec/**/*.spec.js'",
-    "test:watch": "nodemon --exec \"mocha -r spec/init -R spec 'spec/**/*.spec.js' || true\" -e js,json,sql",
-    "cover:show": "nyc report --reporter=html && open coverage/index.html",
-    "sql:start": "docker-compose -f spec/setup/docker-compose.yml up -d",
-    "sql:wait": "docker exec -it skwell /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P P@ssw0rd -l 60 -Q \"SELECT 1\" > /dev/null",
+    "test": "nyc -r text-summary -r lcov mocha -r spec/init -R spec 'spec/**/*.spec.js'",
+	"test:watch": "nodemon --exec \"mocha -r spec/init -R spec 'spec/**/*.spec.js' || true\" -e js,json,sql",
+    "cover:show": "open coverage/lcov-report/index.html",
+    "sql:start": "docker-compose -f spec/setup/docker-compose.yml up --wait",
     "sql:stop": "docker-compose -f spec/setup/docker-compose.yml down"
   },
   "author": "",
