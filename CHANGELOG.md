@@ -1,3 +1,9 @@
+## 10.x
+
+### 10.0.0
+
+* Added option for multi subnet failover.
+
 ## 9.x
 
 ### 9.0.0

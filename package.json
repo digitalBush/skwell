@@ -1,6 +1,6 @@
 {
   "name": "skwell",
-  "version": "9.0.0",
+  "version": "10.0.0",
   "description": "SQL Server Client pooled and promised",
   "main": "src/index.js",
   "repository": {
@@ -9,7 +9,7 @@
   },
   "scripts": {
     "test": "nyc -r text-summary -r lcov mocha -r spec/init -R spec 'spec/**/*.spec.js'",
-	"test:watch": "nodemon --exec \"mocha -r spec/init -R spec 'spec/**/*.spec.js' || true\" -e js,json,sql",
+    "test:watch": "nodemon --exec \"mocha -r spec/init -R spec 'spec/**/*.spec.js' || true\" -e js,json,sql",
     "cover:show": "open coverage/lcov-report/index.html",
     "sql:start": "docker-compose -f spec/setup/docker-compose.yml up --wait",
     "sql:stop": "docker-compose -f spec/setup/docker-compose.yml down"
