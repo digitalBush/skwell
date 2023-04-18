@@ -3,6 +3,10 @@
   "version": "10.0.0",
   "description": "SQL Server Client pooled and promised",
   "main": "src/index.js",
+  "files": [
+	"/src",
+	"index.d.ts"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/digitalBush/skwell.git"
