@@ -1,5 +1,10 @@
 ## 10.x
 
+### 10.1.0
+
+* Let's not publish the spec folder...
+* Added typescript definitions file
+
 ### 10.0.0
 
 * Added option for multi subnet failover.
