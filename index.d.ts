@@ -93,7 +93,9 @@ declare module "skwell"
 		pool?: {
 			min?: number;
 			max?: number;
-		}
+		};
+		onBeginTransaction: ( tx: Transaction ) => Promise<void>;
+		onEndTransaction: ( tx: Transaction ) => Promise<void>;
 	}
 
 	export function connect( config: SqlConfig ): Client;
