@@ -1,5 +1,9 @@
 ## 10.x
 
+### 10.2.0
+
+* Added missing definition for begin/end transaction
+
 ### 10.1.0
 
 * Let's not publish the spec folder...
