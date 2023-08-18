@@ -1,7 +1,8 @@
 const { TYPES } = require( "tedious" );
 class TvpType {
 
-	constructor( cols ) {
+	constructor( name, cols ) {
+		this.name = name;
 		this.cols = cols;
 	}
 
@@ -25,6 +26,7 @@ class TvpType {
 		} );
 
 		return {
+			name: this.name,
 			columns,
 			rows: data.map( o => props.map( p => o[ p ] || null ) )
 		};

@@ -39,7 +39,13 @@ const types = {
 	variant: () => new TypeWrapper( TYPES.Variant ),
 	xml: () => new TypeWrapper( TYPES.Xml )
 };
-types.tvp = cols => new TvpType( cols );
+types.tvp = ( name, cols ) => {
+	if ( typeof( name ) !== "string" ) {
+		cols = name;
+		name = "";
+	}
+	return new TvpType( name, cols );
+};
 
 Object.keys( types ).forEach( key => {
 	types[ key ].nullable = function( val ) {

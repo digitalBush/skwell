@@ -169,7 +169,7 @@ describe( "Types - Integration", () => {
 		} );
 	} );
 
-	it( "should round trip tvp", async () => {
+	it( "should round trip tvp(sproc)", async () => {
 		await sql.executeBatch( `
 			IF TYPE_ID('IdTable') IS NULL BEGIN
 				CREATE TYPE IdTable
@@ -185,6 +185,26 @@ describe( "Types - Integration", () => {
 		const ids = await sql.query( sql.sproc( "usp_test" ), {
 			ids: {
 				type: sql.tvp( {
+					value: sql.bigint
+				} ),
+				val: [ { value: "1" }, { value: "2" } ]
+			}
+		} );
+
+		ids.should.deep.equal( [ { value: "1" }, { value: "2" } ] );
+	} );
+
+	it( "should round trip tvp (no sproc)", async () => {
+		await sql.executeBatch( `
+			IF TYPE_ID('IdTable') IS NULL BEGIN
+				CREATE TYPE IdTable
+				AS TABLE
+					( value BIGINT );
+			END` );
+
+		const ids = await sql.query( `SELECT value FROM @ids`, {
+			ids: {
+				type: sql.tvp( "IdTable", {
 					value: sql.bigint
 				} ),
 				val: [ { value: "1" }, { value: "2" } ]
