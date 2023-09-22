@@ -1,54 +1,80 @@
-const { sinon } = testHelpers;
+const { proxyquire, sinon, expect } = testHelpers;
 
-const parameterBuilder = require( "src/parameterBuilder" );
-const types = require( "src/types" );
 
 describe( "parameterBuilder", () => {
-	function getRequest( sql ) {
-		return {
-			addParameter: sinon.stub(),
-			sqlTextOrProcedure: sql || ""
+	let parameterBuilder, typeMapper, jsonTableType, jsonTableTypeConstructor;
+	beforeEach( () => {
+		typeMapper = {
+			missingType: sinon.stub().returns( false ),
+			valueToType: sinon.stub(),
+			isObj: sinon.stub().returns( false ) };
+
+		jsonTableType = {
+			addToRequest: sinon.stub()
 		};
-	}
-	[
-		{ name: "no parens", sql: "SELECT * FROM lol WHERE foo in @bars" },
-		{ name: "parens, no spaces", sql: "SELECT * FROM lol WHERE foo in (@bars)" },
-		{ name: "parens and spaces", sql: "SELECT * FROM lol WHERE foo in ( @bars )" }
-	].forEach( scenario => {
-		it( `should expand array params: ${ scenario.name }`, () => {
-			const expectedType = types.int().type;
-			const expectedTypeOptions = { length: undefined, precision: undefined, scale: undefined };
-
-			const req = getRequest( scenario.sql );
-
-			parameterBuilder.addRequestParams( req, {
-				bars: {
-					val: [ 1, 2, 3 ],
-					type: types.int
-				}
-			} );
-
-			req.sqlTextOrProcedure.should.equal( "SELECT * FROM lol WHERE foo in (@bars0,@bars1,@bars2)" );
-
-			req.addParameter.should.be.calledThrice()
-				.and.calledWithExactly( "bars0", expectedType, 1, expectedTypeOptions )
-				.and.calledWithExactly( "bars1", expectedType, 2, expectedTypeOptions )
-				.and.calledWithExactly( "bars2", expectedType, 3, expectedTypeOptions );
+		jsonTableTypeConstructor = sinon.stub().returns( jsonTableType );
+		parameterBuilder = proxyquire( "src/parameterBuilder", {
+			"./typeMapper": typeMapper,
+			"./JsonTableType": jsonTableTypeConstructor
 		} );
 	} );
 
-	it( "should provide empty set sql when expanding params on an empty list", () => {
-		const req = getRequest( "SELECT * FROM lol WHERE foo in @bars" );
+	it( "should infer type", () => {
+		const type = {
+			addToRequest: sinon.stub()
+		};
+		const req = "REQUEST";
+
+		typeMapper.missingType.returns( true );
+		typeMapper.valueToType.returns( type );
+		parameterBuilder.addRequestParams( req, {
+			lol: 123
+		} );
+
+		type.addToRequest.should.be.calledOnceWithExactly( req, "lol", 123 );
+	} );
+
+	it( "should expand type", () => {
+		const type = {
+			addToRequest: sinon.stub()
+		};
+		const req = "REQUEST";
 
 		parameterBuilder.addRequestParams( req, {
-			bars: {
-				val: [ ],
-				type: types.int
+			lol: {
+				type: () => type,
+				val: 123
 			}
 		} );
 
-		req.sqlTextOrProcedure.should.equal( "SELECT * FROM lol WHERE foo in (SELECT 1 WHERE 1=0)" );
+		type.addToRequest.should.be.calledOnceWithExactly( req, "lol", 123 );
+	} );
 
-		req.addParameter.should.not.be.called();
+	it( "should wrap object types", () => {
+		const req = "REQUEST";
+		typeMapper.isObj.returns( true );
+		const val = [ { lol: 123 } ];
+
+		parameterBuilder.addRequestParams( req, {
+			lol: {
+				type: {
+					lol: "SOME TYPE"
+				},
+				val
+			}
+		} );
+		jsonTableType.addToRequest.should.be.calledOnceWithExactly( req, "lol", val );
+	} );
+
+	it( "should error with an unknown type", () => {
+		const req = "REQUEST";
+		const val = [ { lol: 123 } ];
+
+		expect( () => parameterBuilder.addRequestParams( req, {
+			lol: {
+				type: "BOOM",
+				val
+			}
+		} ) ).to.throw( "Parameter lol has invalid type." );
 	} );
 } );

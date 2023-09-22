@@ -1,8 +1,16 @@
 const types = require( "./types" );
 
-const MIN_SQL_INT = -2_147_483_648;
-const MAX_SQL_INT = 2_147_483_647;
-const MAX_STRING = 4_000;
+const MAX_SQL_INT = 2147483647;
+const MIN_SQL_INT = -2147483648;
+const MAX_STRING = 4000;
+
+function missingType( val ) {
+	if ( val === null || val === undefined ) {
+		return true;
+	}
+
+	return !val.hasOwnProperty( "type" ) || !val.hasOwnProperty( "val" );
+}
 
 function valueToType( val ) {
 	if ( val === null || val === undefined ) {
@@ -39,4 +47,12 @@ function valueToType( val ) {
 	}
 }
 
-module.exports = { valueToType };
+function isObj( obj ) {
+	if ( typeof obj !== "object" || obj === null ) {
+		return false;
+	}
+
+	return Object.getPrototypeOf( obj ) === Object.prototype;
+}
+
+module.exports = { missingType, valueToType, isObj };

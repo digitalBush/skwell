@@ -182,47 +182,5 @@ describe( "types", () => {
 		it( "should create a wrapper for tvp type", () => {
 			tvp.should.be.instanceof( TvpType );
 		} );
-
-		it( "should return tedious type", () => {
-			tvp.type.name.should.equal( "TVP" );
-		} );
-
-		it( "should return correct value", () => {
-			const val = tvp.getVal( [
-				{ a: "1", b: "yo", c: 42 },
-				{ b: "hi", a: "2", c: 1.23 },
-				{ a: "3" }
-			] );
-
-			val.columns.should.deep.equal( [
-				{
-					name: "a",
-					type: types.bigint().type,
-					length: undefined,
-					precision: undefined,
-					scale: undefined
-				},
-				{
-					name: "b",
-					type: types.nvarchar( 30 ).type,
-					length: 30,
-					precision: undefined,
-					scale: undefined
-				},
-				{
-					name: "c",
-					type: types.numeric( 3, 1 ).type,
-					length: undefined,
-					precision: 3,
-					scale: 1
-				}
-			] );
-
-			val.rows.should.deep.equal( [
-				[ "1", "yo", 42 ],
-				[ "2", "hi", 1.23 ],
-				[ "3", null, null ]
-			] );
-		} );
 	} );
 } );

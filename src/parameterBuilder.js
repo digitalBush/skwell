@@ -1,87 +1,16 @@
-const types = require( "./types" );
-const { valueToType } = require( "./typeMapper" );
-
-const TypeWrapper = require( "./TypeWrapper" );
-const TvpType = require( "./TvpType" );
-
-function typeDeclarations( definition ) {
-	return Object.keys( definition ).map( name => {
-		let column = definition[ name ];
-		if ( typeof column === "function" ) {
-			column = column();
-		}
-		return {
-			name,
-			declaration: column.declaration
-		};
-	} );
-}
-
-function addArrayParamExpansion( request, key, param ) {
-	const matcher = new RegExp( `(\\(\\s*@${ key }\\s*\\))|@${ key }\\b`, "ig" );
-	if ( param.val.length === 0 ) {
-		request.sqlTextOrProcedure = request.sqlTextOrProcedure.replace( matcher, "(SELECT 1 WHERE 1=0)" );
-		return;
-	}
-
-	const { type: { type, length, precision, scale } } = param;
-
-	const params = [];
-	let i = 0;
-	for ( const item of param.val ) {
-		const itemName = `${ key }${ i++ }`;
-		request.addParameter( itemName, type, item, { length, precision, scale } );
-		params.push( `@${ itemName }` );
-	}
-	request.sqlTextOrProcedure = request.sqlTextOrProcedure.replace( matcher, `(${ params.join( "," ) })` );
-}
-
-function addTableParam( request, key, param ) {
-	const typeList = typeDeclarations( param.type );
-
-	const table = typeList.map( ( { name, declaration } ) => `[${ name }] ${ declaration }` ).join( "," );
-	const json = typeList.map( ( { name, declaration } ) => `[${ name }] ${ declaration } '$.${ name }'` ).join( "," );
-
-	const prepend = `
-		DECLARE @${ key } TABLE (
-			${ table }
-		);
-		INSERT INTO @${ key }
-		SELECT * FROM
-		OPENJSON ( @${ key }Json )
-		WITH (
-			${ json }
-		);`;
-
-	const name = `${ key }Json`;
-	const type = types.nvarchar();
-	const val = JSON.stringify( param.val );
-
-	request.sqlTextOrProcedure = `${ prepend } ${ request.sqlTextOrProcedure }`;
-	request.addParameter( name, type.type, val );
-}
-
-function addTvpParam( request, key, param ) {
-	const val = param.type.getVal( param.val );
-	request.addParameter( key, param.type.type, val );
-}
-
-function missingType( val ) {
-	if ( val === null || val === undefined ) {
-		return true;
-	}
-
-	return !val.hasOwnProperty( "type" ) || !val.hasOwnProperty( "val" );
-}
+const JsonTableType = require( "./JsonTableType" );
+const { missingType, valueToType, isObj } = require( "./typeMapper" );
 
 module.exports = {
 	addRequestParams( request, params ) {
 		if ( !params ) {
 			return;
 		}
+
 		Object.keys( params ).forEach( key => {
 			let param = params[ key ];
 
+			// Infer type
 			if ( missingType( param ) ) {
 				param = {
 					val: param,
@@ -89,20 +18,21 @@ module.exports = {
 				};
 			}
 
+			// Missing length/precision/scale, use defaults
 			if ( typeof param.type === "function" ) {
 				param.type = param.type();
 			}
 
-			if ( param.type instanceof TvpType ) {
-				addTvpParam( request, key, param );
-			} else if ( !Array.isArray( param.val ) ) {
-				const { val, type: { type, length, precision, scale } } = param;
-				request.addParameter( key, type, val, { length, precision, scale } );
-			} else if ( param.type instanceof TypeWrapper ) {
-				addArrayParamExpansion( request, key, param );
-			} else {
-				addTableParam( request, key, param );
+			// Assume type:{...} is a JSON based table param
+			if ( isObj( param.type ) ) {
+				param.type = new JsonTableType( param.type );
 			}
+
+			const { type, val } = param;
+			if ( !type.addToRequest ) {
+				throw new Error( `Parameter ${ key } has invalid type.` );
+			}
+			type.addToRequest( request, key, val );
 		} );
 	},
 

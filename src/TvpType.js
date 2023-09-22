@@ -1,16 +1,12 @@
 const { TYPES } = require( "tedious" );
 class TvpType {
 
-	constructor( name, cols ) {
-		this.name = name;
+	constructor( typeName, cols ) {
+		this.typeName = typeName;
 		this.cols = cols;
 	}
 
-	get type() {
-		return TYPES.TVP;
-	}
-
-	getVal( data ) {
+	addToRequest( request, paramName, data ) {
 		const props = [];
 		const columns = [];
 
@@ -25,11 +21,12 @@ class TvpType {
 			props.push( name );
 		} );
 
-		return {
-			name: this.name,
+		const val = {
+			name: this.typeName,
 			columns,
 			rows: data.map( o => props.map( p => o[ p ] || null ) )
 		};
+		request.addParameter( paramName, TYPES.TVP, val );
 	}
 
 }

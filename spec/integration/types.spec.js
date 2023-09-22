@@ -169,7 +169,7 @@ describe( "Types - Integration", () => {
 		} );
 	} );
 
-	it( "should round trip tvp(sproc)", async () => {
+	it( "should round trip tvp (sproc)", async () => {
 		await sql.executeBatch( `
 			IF TYPE_ID('IdTable') IS NULL BEGIN
 				CREATE TYPE IdTable
@@ -187,14 +187,14 @@ describe( "Types - Integration", () => {
 				type: sql.tvp( {
 					value: sql.bigint
 				} ),
-				val: [ { value: "1" }, { value: "2" } ]
+				val: [ { value: "1" }, { value: "2" }, {} ]
 			}
 		} );
 
-		ids.should.deep.equal( [ { value: "1" }, { value: "2" } ] );
+		ids.should.deep.equal( [ { value: "1" }, { value: "2" }, {value: null} ] );
 	} );
 
-	it( "should round trip tvp (no sproc)", async () => {
+	it( "should round trip tvp (query)", async () => {
 		await sql.executeBatch( `
 			IF TYPE_ID('IdTable') IS NULL BEGIN
 				CREATE TYPE IdTable
@@ -205,7 +205,7 @@ describe( "Types - Integration", () => {
 		const ids = await sql.query( `SELECT value FROM @ids`, {
 			ids: {
 				type: sql.tvp( "IdTable", {
-					value: sql.bigint
+					value: sql.bigint()
 				} ),
 				val: [ { value: "1" }, { value: "2" } ]
 			}
@@ -213,7 +213,6 @@ describe( "Types - Integration", () => {
 
 		ids.should.deep.equal( [ { value: "1" }, { value: "2" } ] );
 	} );
-
 
 	Object.keys( types ).forEach( name => {
 		it( `should have same ${ name } type for module and client`, () => {
