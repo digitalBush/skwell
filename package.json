@@ -1,6 +1,6 @@
 {
   "name": "skwell",
-  "version": "10.2.0",
+  "version": "11.0.0",
   "description": "SQL Server Client pooled and promised",
   "main": "src/index.js",
   "files": [

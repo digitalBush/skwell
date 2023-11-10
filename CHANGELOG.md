@@ -1,3 +1,13 @@
+## 11.x
+
+### 11.0.0
+
+* Drop Node 16
+* update generic-pool to latest
+* Update tedious to latest + better TVP support
+* Update dev deps
+* Updated file loader to support file:// caller paths from ESM
+
 ## 10.x
 
 ### 10.2.0
