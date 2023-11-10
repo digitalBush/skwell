@@ -1,15 +1,19 @@
-const { readFile } = require( "fs" );
-const { promisify } = require( "util" );
-const path = require( "path" );
+const { readFile } = require( "node:fs/promises" );
+const path = require( "node:path" );
+const { fileURLToPath } = require( "node:url" );
 
 const callsites = require( "callsites" );
 
-const readFileAsync = promisify( readFile );
 const cache = new Map();
 
 module.exports = async function( relativeFile ) {
-	const relativeTo = path.dirname( callsites()[ 1 ].getFileName() );
+	let callerFileName = callsites()[ 1 ].getFileName();
 
+	if ( callerFileName.startsWith( "file://" ) ) {
+		// ESM
+		callerFileName = fileURLToPath( callerFileName );
+	}
+	const relativeTo = path.dirname( callerFileName );
 	if ( path.extname( relativeFile ) === "" ) {
 		relativeFile += ".sql";
 	}
@@ -17,7 +21,7 @@ module.exports = async function( relativeFile ) {
 
 	let result = cache.get( fileName );
 	if ( !result ) {
-		result = await readFileAsync( fileName, "utf8" );
+		result = await readFile( fileName, "utf8" );
 		cache.set( fileName, result );
 	}
 	return result;
