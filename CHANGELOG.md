@@ -1,5 +1,9 @@
 ## 11.x
 
+### 11.0.1
+
+* Bump tedious to 16.6.1.
+
 ### 11.0.0
 
 * Drop Node 16
