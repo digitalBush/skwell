@@ -158,7 +158,7 @@ describe( "Types - Integration", () => {
 					( value BIGINT );
 			END` );
 
-		const ids = await sql.query( `SELECT value FROM @ids`, {
+		const ids = await sql.query( "SELECT value FROM @ids", {
 			ids: {
 				type: sql.tvp( "IdTable", {
 					value: sql.bigint

@@ -34,7 +34,7 @@ const sql = skwell.connect( {
 } );
 
 ```
-
+*NOTE:* Setting `pool:false` will disable pooling entirely.
 
 At this point, you have a client (`sql`) that is ready to be used non-transactionally. A pool of connections is maintained in the background and one will be chosen for you to execute your queries. Queries will resolve with the values or be rejected with an error.
 
