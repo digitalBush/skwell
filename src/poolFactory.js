@@ -2,6 +2,7 @@ const genericPool = require( "generic-pool" );
 
 const configBuilder = require( "./configBuilder" );
 const connectionFactory = require( "./connectionFactory" );
+const EmptyPool = require( "./EmptyPool" );
 
 function getResourceFactory( client, config ) {
 	return {
@@ -30,5 +31,8 @@ function getResourceFactory( client, config ) {
 
 module.exports = ( client, config ) => {
 	const resourceFactory = getResourceFactory( client, config );
+	if ( config.pool === false ) {
+		return new EmptyPool( resourceFactory );
+	}
 	return genericPool.createPool( resourceFactory, configBuilder.connectionPool( config ) );
 };

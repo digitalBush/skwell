@@ -13,9 +13,11 @@ describe( "Connection Reset - Integration", () => {
 	} );
 
 	it( "should reuse the same connection between each call", async () => {
-		const spid = await sql.queryValue( "select @@spid" );
-		const spid2 = await sql.queryValue( "select @@spid" );
-		spid.should.equal( spid2 );
+		const query = "select connection_id from sys.dm_exec_connections where session_id = @@spid";
+
+		const cid1 = await sql.queryValue( query );
+		const cid2 = await sql.queryValue( query );
+		cid1.should.equal( cid2 );
 	} );
 
 	it( "should reset connection between calls", async () => {
