@@ -1,5 +1,9 @@
 ## 11.x
 
+### 11.1.0
+
+* feat: add ability to disable pool.
+
 ### 11.0.1
 
 * Bump tedious to 16.6.1.
