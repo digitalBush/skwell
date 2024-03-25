@@ -1,5 +1,10 @@
 ## 11.x
 
+### 11.2.0
+
+* update dev deps
+* bump tedious to drop punycode warning
+
 ### 11.1.0
 
 * feat: add ability to disable pool.
