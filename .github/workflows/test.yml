@@ -14,7 +14,7 @@ jobs:
       DB_PASSWORD: P@ssw0rd
     services:
       mssql:
-        image: mcr.microsoft.com/mssql/server
+        image: mcr.microsoft.com/mssql/server:2019-latest
         env:
           ACCEPT_EULA: Y
           MSSQL_SA_PASSWORD: ${{ env.DB_PASSWORD }}
@@ -22,7 +22,7 @@ jobs:
         ports:
           - 1434:1433
         options: >-
-          --health-cmd "/opt/mssql-tools/bin/sqlcmd -U sa -P $MSSQL_SA_PASSWORD -Q 'select 1' -b -o /dev/null"
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -U sa -P $MSSQL_SA_PASSWORD -Q 'select 1' -b -o /dev/null"
           --health-interval 10s
           --health-timeout 3s
           --health-start-period 10s
