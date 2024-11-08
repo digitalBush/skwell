@@ -1,6 +1,6 @@
 # Skwell
 [![Build Status](https://github.com/digitalbush/skwell/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/digitalBush/skwell/actions/workflows/test.yml?query=branch%3Amaster)
-[![Coverage Status](https://coveralls.io/repos/github/digitalBush/skwell/badge.svg)](https://coveralls.io/github/digitalBush/skwell)
+[![codecov](https://codecov.io/github/digitalBush/skwell/graph/badge.svg?token=gOUELGLFZK)](https://codecov.io/github/digitalBush/skwell)
 
 A promised based SQL Server client with connection pooling.
 
