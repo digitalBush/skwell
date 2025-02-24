@@ -1,3 +1,11 @@
+## 12.x
+
+### 12.0.0
+
+* Update deps for security audit
+* run tests on sql 2019
+* Replace coveralls with codecov
+
 ## 11.x
 
 ### 11.2.0
