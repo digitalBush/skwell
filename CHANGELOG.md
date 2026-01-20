@@ -1,5 +1,9 @@
 ## 12.x
 
+### 12.1.0
+
+* Update tedious to fix dep audit.
+
 ### 12.0.0
 
 * Update deps for security audit
